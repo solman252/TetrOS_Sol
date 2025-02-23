@@ -1,38 +1,46 @@
-# Compiled files
-*.o
-*.out
-*.a
-*.so
-*.exe
-
-# Editor and IDE files
-.idea/
-*.iml
-*.ipr
-*.iws
-cmake-build-*/
-CMakeLists.txt.user
-
-# CMake generated files
-CMakeCache.txt
-CMakeFiles/
-Makefile
-cmake_install.cmake
-
 # Build artifacts
-build/
-dist/
-*.dSYM/
+*.o
+*.bin
+*.elf
+*.img
+*.iso
+*.map
 
-# Logs and temp files
-*.log
-*.tmp
+# Temporary files
 *.swp
+*.swo
+*.bak
+*.tmp
 
-# Debugging
-vgcore.*
-*.core
+# Compiled binaries
+kernel
+bootloader
 
-# OS-specific files
-.DS_Store
-Thumbs.db
+# Logs and debug files
+*.log
+*.dmp
+
+# Tools and output files
+/build/
+/output/
+*.lst
+*.sym
+
+# IDE-specific files
+.vscode/
+.idea/
+*.code-workspace
+
+# Generated Makefile artifacts
+Makefile.in
+Makefile.dep
+
+# Disk images
+*.vdi
+*.vmdk
+*.qcow2
+
+# QEMU execution state
+qemu.pid
+qemu.log
+
