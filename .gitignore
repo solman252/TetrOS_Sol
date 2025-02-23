@@ -1,0 +1,38 @@
+# Compiled files
+*.o
+*.out
+*.a
+*.so
+*.exe
+
+# Editor and IDE files
+.idea/
+*.iml
+*.ipr
+*.iws
+cmake-build-*/
+CMakeLists.txt.user
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
+
+# Build artifacts
+build/
+dist/
+*.dSYM/
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+
+# Debugging
+vgcore.*
+*.core
+
+# OS-specific files
+.DS_Store
+Thumbs.db
