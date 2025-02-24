@@ -1,12 +1,18 @@
-// kernel.c
-void kernel_main() {
-    char *video_memory = (char *)0xB8000; // VGA text buffer
-    const char *message = "Welcome to tetrOS!";
-    
+void kernel_main(void) {
+    // vga text buffer starts at 0xB8000.
+    volatile char *video = (volatile char *)0xB8000;
+    const char *message = "Hello from kernel!";
+
+    // print the message.
     for (int i = 0; message[i] != '\0'; i++) {
-        video_memory[i * 2] = message[i]; // Character
-        video_memory[i * 2 + 1] = 0x07;   // Color attribute (white on black)
+        video[i * 2]     = message[i];
+        video[i * 2 + 1] = 0x07;  // Light grey on black.
     }
 
-    while (1); // Halt
+    // halt cpu forever
+    while (1);
+}
+
+void _start(void) {
+    kernel_main();
 }
