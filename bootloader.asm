@@ -1,66 +1,78 @@
-BITS 16
-ORG 0x7C00
+[BITS 16]
+org 0x7c00
 
 start:
     cli
-    mov ax, 0x0000    ; set up segment registers
-    mov ds, ax
-    mov es, ax
-    mov fs, ax
-    mov gs, ax
-
-    mov sp, 0x7E00    ; set up stack higher to stop it from overwriting bootloader
-
-    mov si, message
+    mov si, load_msg
     call print_string
-
-    ; Load kernel from disk
-    mov ax, 0x1000    ; segment where kernel will be loaded
+    mov ax, 0x1000
     mov es, ax
-    mov bx, 0x0000    ; offset in segment
-    mov dh, 2         ; number of sectors to read
-    call disk_load
+    mov bx, 0x0000
+    mov ah, 0x02
+    mov al, 1
+    mov ch, 0
+    mov dh, 0
+    mov cl, 2
+    mov dl, 0x80
+    int 0x13
+    jc disk_error
+    mov si, loaded_msg
+    call print_string
+    call enable_a20
+    call switch_to_pm
 
-    ; jump to kernel if it works
-    jmp 0x1000:0000
+disk_error:
+    mov si, error_msg
+    call print_string
+    jmp $
 
 print_string:
     lodsb
     or al, al
-    jz done
+    jz .done
     mov ah, 0x0E
     int 0x10
     jmp print_string
-done:
+.done:
     ret
 
-disk_load:
-    mov si, disk_reading_msg
-    call print_string
-
-    mov ah, 0x02    ; bios disk read function
-    mov al, dh      ; # of sectors to read
-    mov ch, 0x00    ; cylinder 0
-    mov dh, 0x00    ; head 0
-    mov cl, 0x02    ; start reading at sector 2
-    mov dl, 0x80    ; first hard disk
-    int 0x13
-    jc error        ; if carry flag set make it print error
-
-    mov si, disk_read_success
-    call print_string
-
+enable_a20:
+    in al, 0x92
+    or al, 0x02
+    out 0x92, al
     ret
 
-error:
-    mov si, disk_fail
-    call print_string
-    hlt
+switch_to_pm:
+    lgdt [gdt_descriptor]
+    mov eax, cr0
+    or eax, 1
+    mov cr0, eax
+    jmp 0x08:pm_entry
 
-message db "Booting tetrOS...", 0
-disk_reading_msg db "Reading kernel...", 0
-disk_read_success db "Kernel loaded!", 0
-disk_fail db "Disk read failed!", 0
+[BITS 32]
+pm_entry:
+    mov ax, 0x10
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    mov ss, ax
+    mov esp, 0x90000
+    jmp 0x08:0x10000
 
-times 510-($-$$) db 0
+gdt_start:
+    dq 0x0000000000000000
+    dq 0x00CF9A000000FFFF
+    dq 0x00CF92000000FFFF
+gdt_end:
+
+gdt_descriptor:
+    dw gdt_end - gdt_start - 1
+    dd gdt_start
+
+load_msg   db "Loading kernel...", 0
+loaded_msg db "Kernel loaded!", 0
+error_msg  db "Disk read error!", 0
+
+times 510 - ($ - $$) db 0
 dw 0xAA55
