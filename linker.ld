@@ -1,21 +1,18 @@
-ENTRY(kernel_main)
+OUTPUT_FORMAT(binary)
+ENTRY(_start)
 
-SECTIONS
-{
-    . = 0x10000;  /* THIS IS THE ENTRY POINT GET IT RIGHT !!!!! */
+SECTIONS {
+    . = 0x10000;
 
-    .text :
-    {
+    .text : {
         *(.text)
     }
 
-    .data :
-    {
+    .data : {
         *(.data)
     }
 
-    .bss :
-    {
+    .bss : {
         *(.bss)
     }
 }
