@@ -2,7 +2,7 @@ ENTRY(kernel_main)
 
 SECTIONS
 {
-    . = 0x1000;
+    . = 0x10000;  /* THIS IS THE ENTRY POINT GET IT RIGHT !!!!! */
 
     .text :
     {
