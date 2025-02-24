@@ -6,7 +6,7 @@ void kernel_main(void) {
     // print the message.
     for (int i = 0; message[i] != '\0'; i++) {
         video[i * 2]     = message[i];
-        video[i * 2 + 1] = 0x07;  // Light grey on black.
+        video[i * 2 + 1] = 0x07;
     }
 
     // halt cpu forever
