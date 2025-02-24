@@ -14,7 +14,7 @@ To compile and run tetrOS, you need:
 #### Installing Dependencies (Linux - Ubuntu/Debian)
 ```bash
 sudo apt update
-sudo apt install nasm qemu build-essential bison flex libgmp3-dev libmpc-dev libmpfr-dev texinfo
+sudo apt install nasm qemu-system build-essential bison flex libgmp3-dev libmpc-dev libmpfr-dev texinfo
 ```
 
 #### Installing Dependencies (Windows)
