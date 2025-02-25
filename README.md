@@ -1,6 +1,6 @@
 # tetrOS
 
-tetrOS is a simple, bootable OS designed to run a game of Tetris. This document covers **compiling**, **installing dependencies**, and **running tetrOS** on **Arch Linux** and **Ubuntu/Debian**.
+tetrOS is a simple, bootable OS designed to run a game of Tetris.
 
 ---
 
