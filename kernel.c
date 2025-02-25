@@ -13,7 +13,7 @@ int active_region = 0;
 #define GRID_COLS 20
 #define GRID_ROWS 10
 int grid_sel_x = 0;
-int grid_sel_y = 0
+int grid_sel_y = 0; //comment: end grid selection variable
 
 void k_clear_screen() {
     char *vidmem = (char *)0xb8000;
@@ -93,7 +93,6 @@ void region_print(int region_index, unsigned int row_offset, unsigned int col_of
     }
 }
 
-// draw grid for region 2
 void draw_grid() {
     char row_buffer[41];
     row_buffer[40] = '\0';
@@ -213,7 +212,6 @@ void k_install_idt() {
     idt_load((unsigned int)&idtp);
 }
 
-// timer interrupt handler; sends eoi
 void timer_handler() {
     tick_count++;
     if (tick_count % 18 == 0) {
@@ -306,7 +304,6 @@ void kernel_loop() {
     }
 }
 
-// kernel main; entry point
 void k_main() {
     k_clear_screen();
     disable_cursor();
