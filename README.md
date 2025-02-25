@@ -27,6 +27,45 @@ For musl cross-compilation:
 sudo apt install musl musl-dev
 ```
 
+### **Building `i686-linux-musl-gcc` Manually (If Missing)**
+
+If `i686-linux-musl-gcc` is not available, follow these steps:
+
+#### **Step 1: Install Build Dependencies**
+```bash
+sudo apt update
+sudo apt install build-essential wget musl musl-dev musl-tools gcc-multilib
+```
+
+#### **Step 2: Download & Build Musl Cross Compiler**
+```bash
+git clone https://github.com/richfelker/musl-cross-make.git
+cd musl-cross-make
+```
+Edit `config.mak` to specify the target architecture:
+```bash
+nano config.mak
+```
+Find `TARGET` and set it to:
+```
+TARGET = i686-linux-musl
+```
+Save and exit, then build the toolchain:
+```bash
+make install
+```
+Once finished, the binaries will be in `output/bin/`.
+
+#### **Step 3: Add to PATH**
+```bash
+export PATH=$HOME/musl-cross-make/output/bin:$PATH
+```
+Check if `i686-linux-musl-gcc` is installed:
+```bash
+i686-linux-musl-gcc --version
+```
+If it prints a version, you’re good to go.
+
 ---
 
 ## **2. Compiling tetrOS**
@@ -65,6 +104,8 @@ Then, in another terminal:
 ```bash
 gdb -ex "target remote localhost:1234" kernel.elf
 ```
+
+---
 
 ## **6. Contributing**
 Feel free to contribute by submitting issues and pull requests.
