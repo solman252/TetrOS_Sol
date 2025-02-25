@@ -1,126 +1,75 @@
-# tetrOS
+# tetrOS - Minimal OS Kernel
 
-**tetrOS** is a bare-metal operating system that only plays Tetris. It is built from scratch using a simple assembly bootloader and a C kernel.
+tetrOS is a simple, bootable OS designed to run a game of Tetris. This document covers **compiling**, **installing dependencies**, and **running tetrOS** on **Arch Linux** and **Ubuntu/Debian**.
 
-## Getting Started
+---
 
-### Prerequisites
-To compile and run tetrOS, you need:
-- **NASM** (for assembling the bootloader)
-- **i686-elf GCC** (for compiling the kernel)
-- **i686-elf LD** (for linking the kernel)
-- **QEMU** (for testing)
+## **1. Installing Dependencies**
 
-#### Installing Dependencies (Linux - Ubuntu/Debian)
+### **Arch Linux**
+Install the required packages using `pacman`:
+```bash
+sudo pacman -S --needed base-devel qemu nasm
+```
+For musl cross-compilation:
+```bash
+sudo pacman -S --needed musl musl-dev musl-tools
+```
+
+### **Ubuntu/Debian**
+Install required packages using `apt`:
 ```bash
 sudo apt update
-sudo apt install nasm qemu-system build-essential bison flex libgmp3-dev libmpc-dev libmpfr-dev texinfo
+sudo apt install build-essential qemu-system-x86 nasm musl-tools
 ```
-
-#### Installing Dependencies (Windows)
-1. Install **WSL (Windows Subsystem for Linux)** or use **MSYS2**.
-2. Install NASM, QEMU, and make:
-   ```bash
-   pacman -S nasm qemu make
-   ```
-3. Download and set up the **i686-elf cross-compiler**:
-   - Download a prebuilt version from [https://github.com/lordmilko/i686-elf-tools/releases](https://github.com/lordmilko/i686-elf-tools/releases)
-   - Extract and add to your PATH:
-     ```powershell
-     setx PATH "%PATH%;C:\path\to\i686-elf-tools\bin"
-     ```
-
-#### Building the Cross-Compiler (i686-elf) (Linux/WSL)
+For musl cross-compilation:
 ```bash
-mkdir -p ~/cross-compiler
-cd ~/cross-compiler
-
-export TARGET=i686-elf
-export PREFIX="$HOME/cross-compiler"
-export PATH="$PREFIX/bin:$PATH"
-
-# Download sources
-wget https://ftp.gnu.org/gnu/binutils/binutils-2.38.tar.gz
-wget https://ftp.gnu.org/gnu/gcc/gcc-12.2.0/gcc-12.2.0.tar.gz
-
-# Extract
-tar -xvzf binutils-2.38.tar.gz
-tar -xvzf gcc-12.2.0.tar.gz
-
-# Build binutils
-mkdir build-binutils
-cd build-binutils
-../binutils-2.38/configure --target=$TARGET --prefix=$PREFIX --with-sysroot --disable-nls --disable-werror
-make -j$(nproc)
-make install
-cd ..
-
-# Build GCC
-mkdir build-gcc
-cd build-gcc
-../gcc-12.2.0/configure --target=$TARGET --prefix=$PREFIX --disable-nls --enable-languages=c --without-headers
-make all-gcc -j$(nproc)
-make all-target-libgcc -j$(nproc)
-make install-gcc
-make install-target-libgcc
+sudo apt install musl musl-dev
 ```
 
-Add the cross-compiler to your PATH:
+---
+
+## **2. Compiling tetrOS**
+
+### **Step 1: Assemble `kernel.asm`**
+Convert the assembly startup code into an object file:
 ```bash
-echo 'export PATH="$HOME/cross-compiler/bin:$PATH"' >> ~/.bashrc
-source ~/.bashrc
+nasm -f elf32 kernel.asm -o kernel_asm.o
 ```
 
-## Project Structure
-```
-/
-├── bootloader.asm   # 16-bit x86 Assembly bootloader
-├── kernel.c         # Simple C kernel
-├── linker.ld        # Linker script
-├── Makefile        # Build automation script
-└── README.md        # Project documentation
-```
-
-## Building tetrOS
-Run the following commands to build tetrOS:
+### **Step 2: Compile `kernel.c`**
+Compile the kernel C code with **musl** and `i686` architecture:
 ```bash
-# Assemble the bootloader
-nasm -f bin bootloader.asm -o boot.bin
-
-# Compile the kernel
-i686-elf-gcc -ffreestanding -c kernel.c -o kernel.o
-
-# Link the kernel
-i686-elf-ld -T linker.ld -o kernel.bin kernel.o
-
-# Create a bootable image
-cat boot.bin kernel.bin > tetrOS.img
+i686-linux-musl-gcc -ffreestanding -m32 -c kernel.c -o kernel_c.o
 ```
 
-### Building on Windows (MSYS2/WSL)
+### **Step 3: Link Everything**
+Link the object files into an **executable kernel**:
 ```bash
-nasm -f bin bootloader.asm -o boot.bin
-i686-elf-gcc -ffreestanding -c kernel.c -o kernel.o
-i686-elf-ld -T linker.ld -o kernel.bin kernel.o
-cat boot.bin kernel.bin > tetrOS.img
+i686-linux-musl-ld -T link.ld -o kernel.elf kernel_asm.o kernel_c.o
 ```
 
-## Running tetrOS in QEMU
+---
+
+## **3. Running tetrOS in QEMU**
+Run the compiled kernel using QEMU:
 ```bash
-qemu-system-x86_64 -drive format=raw,file=tetrOS.img
+qemu-system-i386 -kernel kernel.elf
 ```
 
-### Running on Windows
-```powershell
-qemu-system-x86_64.exe -drive format=raw,file=tetrOS.img
+To debug with GDB:
+```bash
+qemu-system-i386 -kernel kernel.elf -S -s
+```
+Then, in another terminal:
+```bash
+gdb -ex "target remote localhost:1234" kernel.elf
 ```
 
-## Contributing
-### Coding Standards
-- Bootloader: **Assembly (NASM Syntax)**
-- Kernel: **C (Freestanding, No Standard Library)**
-- Compiler: **i686-elf GCC (version 12.2.0 recommended)**
+## **6. Contributing**
+Feel free to contribute by submitting issues and pull requests.
 
-## License
-This project is open-source under the MIT License.
+---
 
+## **7. License**
+tetrOS is open-source and released under the **MIT License**.
