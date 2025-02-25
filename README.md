@@ -109,7 +109,7 @@ i686-linux-musl-gcc -ffreestanding -m32 -c kernel.c -o kernel_c.o
 ```bash
 i686-linux-musl-ld -T linker.ld -o kernel.elf bootloader_asm.o kernel_c.o
 ```
-nvm just run make to build and run to run
+nvm just run ``make`` to build and ``make run`` to run
 
 ---
 
