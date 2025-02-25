@@ -1,4 +1,4 @@
-# tetrOS - Minimal OS Kernel
+# tetrOS
 
 tetrOS is a simple, bootable OS designed to run a game of Tetris. This document covers **compiling**, **installing dependencies**, and **running tetrOS** on **Arch Linux** and **Ubuntu/Debian**.
 
@@ -34,7 +34,7 @@ sudo apt install musl musl-dev
 ### **Step 1: Assemble `bootloader.asm`**
 Convert the assembly startup code into an object file:
 ```bash
-nasm -f elf32 bootloader.asm -o kernel_asm.o
+nasm -f elf32 bootloader.asm -o bootloader_asm.o
 ```
 
 ### **Step 2: Compile `kernel.c`**
@@ -46,7 +46,7 @@ i686-linux-musl-gcc -ffreestanding -m32 -c kernel.c -o kernel_c.o
 ### **Step 3: Link Everything**
 Link the object files into an **executable kernel**:
 ```bash
-i686-linux-musl-ld -T link.ld -o kernel.elf kernel_asm.o kernel_c.o
+i686-linux-musl-ld -T link.ld -o kernel.elf bootloader_asm.o kernel_c.o
 ```
 
 ---
