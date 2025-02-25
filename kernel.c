@@ -1,25 +1,15 @@
 #include "kernel.h"
-#include "keyboard.h"
 
+// Global tick counter for timer interrupts
 volatile unsigned int tick_count = 0;
-volatile unsigned int seconds_value = 0;
-char timer_str[16] = "0s";
 
-char input_buffer[256] = {0};
-int input_index = 0;
-
-int active_region = 0;
-
-#define GRID_COLS 20
-#define GRID_ROWS 10
-int grid_sel_x = 0;
-int grid_sel_y = 0; //comment: end grid selection variable
-
+// --- VGA Text Mode Functions ---
 void k_clear_screen() {
     char *vidmem = (char *)0xb8000;
-    for (unsigned int i = 0; i < 80 * 25 * 2; i += 2) {
-        vidmem[i] = ' ';
-        vidmem[i+1] = WHITE_TXT;
+    unsigned int i = 0;
+    while (i < (80 * 25 * 2)) {
+        vidmem[i++] = ' ';
+        vidmem[i++] = WHITE_TXT;
     }
 }
 
@@ -40,91 +30,13 @@ unsigned int k_printf(char *message, unsigned int line) {
 }
 
 void disable_cursor() {
-    outb(0x3d4, 0x0a);
-    outb(0x3d5, 0x20);
+    // Disable the VGA hardware text cursor
+    outb(0x3D4, 0x0A);
+    outb(0x3D5, 0x20);
 }
 
-void k_clear_line(unsigned int line) {
-    char *vidmem = (char *)0xb8000;
-    unsigned int i = line * 80 * 2;
-    for (int j = 0; j < 80; j++) {
-        vidmem[i] = ' ';
-        vidmem[i+1] = WHITE_TXT;
-        i += 2;
-    }
-}
-
-struct region regions[4] = {
-    {0, 11, 0, 39},
-    {0, 11, 40, 79},
-    {12, 24, 0, 39},
-    {12, 24, 40, 79}
-};
-
-void clear_region(int region_index, unsigned char attribute) {
-    struct region r = regions[region_index];
-    char *vidmem = (char *)0xb8000;
-    for (int row = r.row_start; row <= r.row_end; row++) {
-        for (int col = r.col_start; col <= r.col_end; col++) {
-            int index = (row * 80 + col) * 2;
-            vidmem[index] = ' ';
-            vidmem[index+1] = attribute;
-        }
-    }
-}
-
-void region_print(int region_index, unsigned int row_offset, unsigned int col_offset, char *message, unsigned char attribute) {
-    struct region r = regions[region_index];
-    int row = r.row_start + row_offset;
-    int col = r.col_start + col_offset;
-    char *vidmem = (char *)0xb8000;
-    while (*message && row <= r.row_end) {
-        if (col > r.col_end) {
-            col = r.col_start;
-            row++;
-            if (row > r.row_end)
-                break;
-        }
-        int index = (row * 80 + col) * 2;
-        vidmem[index] = *message;
-        vidmem[index+1] = attribute;
-        col++;
-        message++;
-    }
-}
-
-void draw_grid() {
-    char row_buffer[41];
-    row_buffer[40] = '\0';
-    for (int row = 0; row < GRID_ROWS; row++) {
-        for (int col = 0; col < GRID_COLS; col++) {
-            if (row == grid_sel_y && col == grid_sel_x) {
-                row_buffer[col*2] = '[';
-                row_buffer[col*2+1] = ']';
-            } else {
-                row_buffer[col*2] = ' ';
-                row_buffer[col*2+1] = '.';
-            }
-        }
-        region_print(2, row, 0, row_buffer, (active_region == 2) ? BLUE_BG : WHITE_TXT);
-    }
-}
-
-void update_all_regions() {
-    int attr;
-    attr = (active_region == 0) ? BLUE_BG : WHITE_TXT;
-    clear_region(0, attr);
-    region_print(0, 0, 0, input_buffer, attr);
-    attr = (active_region == 1) ? BLUE_BG : WHITE_TXT;
-    clear_region(1, attr);
-    region_print(1, 0, 0, timer_str, attr);
-    clear_region(2, (active_region == 2) ? BLUE_BG : WHITE_TXT);
-    draw_grid();
-    attr = (active_region == 3) ? BLUE_BG : WHITE_TXT;
-    clear_region(3, attr);
-    region_print(3, 0, 0, "extra", attr);
-}
-
+// --- Utility Function: Simple itoa ---
+// Converts an integer to a string (base 10).
 void itoa(int value, char *str, int base) {
     char *rc = str, *ptr = str, *low;
     if (base < 2 || base > 36) {
@@ -137,20 +49,21 @@ void itoa(int value, char *str, int base) {
     }
     int num = value;
     do {
-        *ptr++ = "0123456789abcdefghijklmnopqrstuvwxyz"[num % base];
+        *ptr++ = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"[num % base];
         num /= base;
-    } while (num);
+    } while(num);
     *ptr = '\0';
     low = rc;
     if (*rc == '-') { low++; }
     char *high = ptr - 1;
-    while (low < high) {
+    while(low < high) {
         char temp = *low;
         *low++ = *high;
         *high-- = temp;
     }
 }
 
+// --- I/O Port Functions ---
 void outb(unsigned short port, unsigned char data) {
     asm volatile ("outb %0, %1" : : "a"(data), "Nd"(port));
 }
@@ -161,26 +74,32 @@ unsigned char inb(unsigned short port) {
     return ret;
 }
 
+// --- PIC Remapping ---
+// Remaps the PIC so that IRQs start at vector 32.
 void pic_remap() {
     unsigned char a1 = inb(0x21);
-    unsigned char a2 = inb(0xa1);
-    outb(0x20, 0x11);
-    outb(0xa0, 0x11);
-    outb(0x21, 0x20);
-    outb(0xa1, 0x28);
-    outb(0x21, 0x04);
-    outb(0xa1, 0x02);
-    outb(0x21, 0x01);
-    outb(0xa1, 0x01);
+    unsigned char a2 = inb(0xA1);
+
+    outb(0x20, 0x11);  // Start initialization in cascade mode.
+    outb(0xA0, 0x11);
+    outb(0x21, 0x20);  // Master PIC vector offset.
+    outb(0xA1, 0x28);  // Slave PIC vector offset.
+    outb(0x21, 0x04);  // Tell Master PIC about slave PIC at IRQ2.
+    outb(0xA1, 0x02);  // Tell Slave PIC its cascade identity.
+    outb(0x21, 0x01);  // Set PICs to 8086/88 (MCS-80/85) mode.
+    outb(0xA1, 0x01);
+
+    // Restore saved masks.
     outb(0x21, a1);
-    outb(0xa1, a2);
+    outb(0xA1, a2);
 }
 
+// --- IDT Structures and Setup ---
 struct idt_entry {
     unsigned short base_low;
-    unsigned short sel;
-    unsigned char always0;
-    unsigned char flags;
+    unsigned short sel;      // Kernel segment selector.
+    unsigned char  always0;
+    unsigned char  flags;    // Present, ring 0, 32-bit interrupt gate.
     unsigned short base_high;
 } __attribute__((packed));
 
@@ -192,126 +111,95 @@ struct idt_ptr {
 struct idt_entry idt[256];
 struct idt_ptr idtp;
 
+// Set an entry in the IDT.
 void idt_set_gate(unsigned char num, unsigned int base, unsigned short sel, unsigned char flags) {
-    idt[num].base_low = base & 0xffff;
-    idt[num].base_high = (base >> 16) & 0xffff;
-    idt[num].sel = sel;
-    idt[num].always0 = 0;
-    idt[num].flags = flags;
+    idt[num].base_low  = base & 0xFFFF;
+    idt[num].base_high = (base >> 16) & 0xFFFF;
+    idt[num].sel       = sel;
+    idt[num].always0   = 0;
+    idt[num].flags     = flags;
 }
 
+// Declaration for assembly routine to load the IDT.
 extern void idt_load(unsigned int);
 
 void k_install_idt() {
     idtp.limit = sizeof(struct idt_entry) * 256 - 1;
-    idtp.base = (unsigned int)&idt;
+    idtp.base  = (unsigned int)&idt;
+    
+    // External assembly stubs for interrupt handlers.
     extern void timer_handler_stub();
     extern void keyboard_handler_stub();
-    idt_set_gate(32, (unsigned int)timer_handler_stub, 0x08, 0x8e);
-    idt_set_gate(33, (unsigned int)keyboard_handler_stub, 0x08, 0x8e);
+    
+    // Map IRQ0 (timer) to vector 32 and IRQ1 (keyboard) to vector 33.
+    idt_set_gate(32, (unsigned int)timer_handler_stub, 0x08, 0x8E);
+    idt_set_gate(33, (unsigned int)keyboard_handler_stub, 0x08, 0x8E);
+    
     idt_load((unsigned int)&idtp);
 }
 
+// --- Timer Interrupt Handler ---
+// Increments a seconds counter every 18 ticks (roughly 1 second).
 void timer_handler() {
     tick_count++;
     if (tick_count % 18 == 0) {
-        seconds_value++;
-        char buf[16];
-        itoa(seconds_value, buf, 10);
+        static unsigned int seconds = 0;
+        seconds++;
+        char buffer[16];
+        itoa(seconds, buffer, 10);
+        // Append 's' to display seconds (e.g., "1s", "2s", etc.)
         int i = 0;
-        while (buf[i]) i++;
-        buf[i] = 's';
-        buf[i+1] = '\0';
-        int j = 0;
-        while (buf[j]) {
-            timer_str[j] = buf[j];
-            j++;
-        }
-        timer_str[j] = '\0';
-        update_all_regions();
+        while (buffer[i]) i++;
+        buffer[i] = 's';
+        buffer[i+1] = '\0';
+        k_printf(buffer, 22);  // Display on line 22.
     }
+    // Send End-of-Interrupt (EOI) signal.
     outb(0x20, 0x20);
 }
 
-void keyboard_handle_key(char ascii) {
-    if (active_region == 0) {
-        if (ascii == '\b') {
-            if (input_index > 0) {
-                input_index--;
-                input_buffer[input_index] = '\0';
-            }
-        } else if (ascii == '\n') {
-            input_index = 0;
-            input_buffer[0] = '\0';
-        } else {
-            if (input_index < 255) {
-                input_buffer[input_index++] = ascii;
-                input_buffer[input_index] = '\0';
-            }
-        }
-        update_all_regions();
-    } else if (active_region == 2) {
-        if (ascii == 'w' || ascii == 'W') {
-            if (grid_sel_y > 0)
-                grid_sel_y--;
-        } else if (ascii == 's' || ascii == 'S') {
-            if (grid_sel_y < GRID_ROWS - 1)
-                grid_sel_y++;
-        } else if (ascii == 'a' || ascii == 'A') {
-            if (grid_sel_x > 0)
-                grid_sel_x--;
-        } else if (ascii == 'd' || ascii == 'D') {
-            if (grid_sel_x < GRID_COLS - 1)
-                grid_sel_x++;
-        }
-        update_all_regions();
-    }
+// --- Keyboard Interrupt Handler ---
+// Future: convert scancodes to key events.
+void keyboard_handler() {
+    unsigned char scancode = inb(0x60);
+    k_printf("Key pressed", 23);
+    outb(0x20, 0x20);
 }
 
-void keyboard_handle_special(key_code_t key) {
-    switch(key) {
-        case KEY_UP:
-            if (active_region == 3) active_region = 1;
-            break;
-        case KEY_DOWN:
-            if (active_region == 0) active_region = 2;
-            else if (active_region == 1) active_region = 3;
-            break;
-        case KEY_LEFT:
-            if (active_region == 1) active_region = 0;
-            else if (active_region == 3) active_region = 2;
-            break;
-        case KEY_RIGHT:
-            if (active_region == 0) active_region = 1;
-            else if (active_region == 2) active_region = 3;
-            break;
-        default:
-            break;
-    }
-    update_all_regions();
-}
-
+// --- Device Driver Initializations ---
 void init_timer() {
+    // Future: configure the PIT (Programmable Interval Timer) if needed.
 }
 
 void init_keyboard() {
-    init_keyboard_driver();
+    // Future: initialize keyboard state or scancode translation.
 }
 
+// --- Kernel Main Loop ---
+// This loop serves as a placeholder for future event processing, scheduling,
+// or game updates (such as your Tetris logic).
 void kernel_loop() {
     while (1) {
+        // Future: dispatch events, update game state, etc.
         asm volatile ("hlt");
     }
 }
 
+// --- Kernel Main Function ---
 void k_main() {
     k_clear_screen();
     disable_cursor();
-    update_all_regions();
+    k_printf("IT WORKS. Welcome to TetrOS", 0);
+
+    // System initialization.
     pic_remap();
     k_install_idt();
     init_timer();
     init_keyboard();
+    
+    // Enable interrupts.
     asm volatile ("sti");
+    
+    // Enter main loop.
     kernel_loop();
 }

@@ -1,41 +1,41 @@
-;multiboot compliant bootloader (i think) & interrupt stubs
+; bootloader.asm - Multiboot compliant bootloader & interrupt stubs
 section .text
-align 4
-dd 0x1badb002           ;multiboot magic number
-dd 0x00                 ;flags
-dd -(0x1badb002+0x00)    ;checksum
+    align 4
+    dd 0x1BADB002           ; Multiboot magic number
+    dd 0x00                 ; Flags
+    dd -(0x1BADB002 + 0x00)  ; Checksum
 
 global start
 extern k_main
 
-;declare external c interrupt handlers.
+; Declare external C interrupt handlers.
 extern timer_handler
 extern keyboard_handler
 
 start:
-    cli             ;disable interrupts
-    call k_main     ;call the kernel main function
-    hlt             ;halt if k_main ever returns
+    cli             ; Disable interrupts.
+    call k_main     ; Call the kernel main function.
+    hlt             ; Halt if k_main ever returns.
 
-;idt loading routine
+; --- IDT Loading Routine ---
 global idt_load
 idt_load:
-    mov eax,[esp+4] ;get pointer to our idt_ptr structure
-    lidt [eax]      ;load the idt register
+    mov eax, [esp+4]  ; Get pointer to our idt_ptr structure.
+    lidt [eax]        ; Load the IDT register.
     ret
 
-;timer interrupt stub
+; --- Timer Interrupt Stub ---
 global timer_handler_stub
 timer_handler_stub:
-    pusha         ;save registers.
-    call timer_handler ;call c timer handler
-    popa          ;restore registers
-    iret          ;return from interrupt
+    pusha                  ; Save registers.
+    call timer_handler     ; Call C timer handler.
+    popa                   ; Restore registers.
+    iret                   ; Return from interrupt.
 
-;keyboard interrupt stub
+; --- Keyboard Interrupt Stub ---
 global keyboard_handler_stub
 keyboard_handler_stub:
-    pusha         ;save registers
-    call keyboard_handler ;call c keyboard handler
-    popa          ;restore registers
-    iret          ;return from interrupt
+    pusha                   ; Save registers.
+    call keyboard_handler   ; Call C keyboard handler.
+    popa                    ; Restore registers.
+    iret                    ; Return from interrupt.
