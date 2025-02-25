@@ -28,4 +28,4 @@ void init_keyboard();
 //kernel main function
 void k_main();
 
-#endif //KERNEL_H
+#endif
