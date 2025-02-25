@@ -31,10 +31,10 @@ sudo apt install musl musl-dev
 
 ## **2. Compiling tetrOS**
 
-### **Step 1: Assemble `kernel.asm`**
+### **Step 1: Assemble `bootloader.asm`**
 Convert the assembly startup code into an object file:
 ```bash
-nasm -f elf32 kernel.asm -o kernel_asm.o
+nasm -f elf32 bootloader.asm -o kernel_asm.o
 ```
 
 ### **Step 2: Compile `kernel.c`**
