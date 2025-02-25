@@ -46,7 +46,7 @@ i686-linux-musl-gcc -ffreestanding -m32 -c kernel.c -o kernel_c.o
 ### **Step 3: Link Everything**
 Link the object files into an **executable kernel**:
 ```bash
-i686-linux-musl-ld -T link.ld -o kernel.elf bootloader_asm.o kernel_c.o
+i686-linux-musl-ld -T linker.ld -o kernel.elf bootloader_asm.o kernel_c.o
 ```
 
 ---
