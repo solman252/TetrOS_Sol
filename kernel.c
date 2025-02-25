@@ -1,25 +1,49 @@
-static void clear_screen(void) {
-    volatile unsigned short *video = (volatile unsigned short *)0xB8000;
-    for (int i = 0; i < 80 * 25; i++) {
-        video[i] = 0x0720;
-    }
-}
+#define WHITE_TXT 0x07 //light gray on black text
 
-void kernel_main(void) {
-    clear_screen();
+void k_clear_screen();
+unsigned int k_printf(char *message, unsigned int line);
 
-    volatile unsigned short *video = (volatile unsigned short *)0xB8000;
-    const char *message = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
-    int i = 0;
+void k_main() 
+{
+	k_clear_screen();
+	k_printf("IT WORKS. Welcome to TetrOS", 0);
+};
 
-    while (message[i] != '\0') {
-        video[i] = (0x07 << 8) | message[i];
-        i++;
-    }
+void k_clear_screen()
+{
+	char *vidmem = (char *) 0xb8000;
+	unsigned int i=0;
+	while(i < (80*25*2))
+	{
+		vidmem[i]=' ';
+		i++;
+		vidmem[i]=WHITE_TXT;
+		i++;
+	};
+};
 
-    while (1) { }
-}
+unsigned int k_printf(char *message, unsigned int line)
+{
+	char *vidmem = (char *) 0xb8000;
+	unsigned int i=0;
 
-void _start(void) {
-    kernel_main();
+	i=(line*80*2);
+
+	while(*message!=0)
+	{
+		if(*message=='\n') // check for a new line
+		{
+			line++;
+			i=(line*80*2);
+			*message++;
+		} else {
+			vidmem[i]=*message;
+			*message++;
+			i++;
+			vidmem[i]=WHITE_TXT;
+			i++;
+		};
+	};
+
+	return(1);
 }
