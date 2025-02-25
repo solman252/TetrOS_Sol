@@ -1,14 +1,9 @@
-OUTPUT_FORMAT(binary)
-ENTRY(_start)
-
-SECTIONS {
-    . = 0x10000;
-    
-    .text : { *(.text) }
-    .rodata : { *(.rodata) }
-    .data : { *(.data) }
-    .bss : { *(.bss) *(COMMON) }
-    _end = .;
-    
-    . = ALIGN(512);
+OUTPUT_FORMAT(elf32-i386)
+ENTRY(start)
+SECTIONS
+{
+	. = 0x100000;
+	.text : {*(.text)}
+	.data : {*(.data)}
+	.bss  : {*(.bss)}
 }
