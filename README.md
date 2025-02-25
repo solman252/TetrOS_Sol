@@ -92,23 +92,24 @@ If `i686-linux-musl-gcc` is not available on your system, you can either **build
 
 ## **3. Compiling tetrOS**
 
-### **Step 1: Assemble `bootloader.asm`**
-Convert the assembly startup code into an object file:
+~~### **Step 1: Assemble `bootloader.asm`**~~
+~~Convert the assembly startup code into an object file:~~
 ```bash
 nasm -f elf32 bootloader.asm -o bootloader_asm.o
 ```
 
-### **Step 2: Compile `kernel.c`**
-Compile the kernel C code with **musl** and `i686` architecture:
+~~### **Step 2: Compile `kernel.c`**~~
+~~Compile the kernel C code with **musl** and `i686` architecture:~~
 ```bash
 i686-linux-musl-gcc -ffreestanding -m32 -c kernel.c -o kernel_c.o
 ```
 
-### **Step 3: Link Everything**
-Link the object files into an **executable kernel**:
+~~### **Step 3: Link Everything**~~
+~~Link the object files into an **executable kernel**:~~
 ```bash
 i686-linux-musl-ld -T linker.ld -o kernel.elf bootloader_asm.o kernel_c.o
 ```
+nvm just run make to build and run to run
 
 ---
 
