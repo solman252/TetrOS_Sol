@@ -6,6 +6,7 @@ const int grid_start_line = 5;
 
 int grid_sel_x = 0;
 int grid_sel_y = 0;
+int square_mode = 0;
 
 volatile unsigned int tick_count = 0;
 
@@ -129,13 +130,21 @@ void k_install_idt() {
 }
 
 void draw_grid() {
-    for (int i = 0; i < grid_height; i++) {
+    for (int y = 0; y < grid_height; y++) {
         char buffer[256];
         int pos = 0;
-        for (int j = 0; j < grid_width; j++) {
-            if (i == grid_sel_y && j == grid_sel_x) {
-                buffer[pos++] = '[';
-                buffer[pos++] = ']';
+        for (int x = 0; x < grid_width; x++) {
+            if (y == grid_sel_y && x == grid_sel_x) {
+                switch(square_mode){
+                    case 0:
+                        buffer[pos++] = '[';
+                        buffer[pos++] = ']';
+                        break;
+                    case 1:
+                        buffer[pos++] = ' ';
+                        buffer[pos++] = 0xdc;
+                        break;
+                }
             } else {
                 buffer[pos++] = ' ';
                 buffer[pos++] = '.';
@@ -180,6 +189,16 @@ void keyboard_handler() {
         case 0x50:
             if (grid_sel_y < grid_height - 1)
                 grid_sel_y++;
+            break;
+        case 0x3B:
+            switch(square_mode) {
+                case 0:
+                    square_mode = 1;
+                    break;
+                case 1:
+                    square_mode = 0;
+                    break;
+            };
             break;
         default:
             break;
