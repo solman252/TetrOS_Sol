@@ -1,5 +1,12 @@
 #include "kernel.h"
 
+const int grid_width = 10;
+const int grid_height = 20;
+const int grid_start_line = 5;
+
+int grid_sel_x = 0;
+int grid_sel_y = 0;
+
 volatile unsigned int tick_count = 0;
 
 void k_clear_screen() {
@@ -70,10 +77,9 @@ unsigned char inb(unsigned short port) {
     return ret;
 }
 
-void pic_remap() {
+void pic_remap() { //remap pics to avoid irq conflicts
     unsigned char a1 = inb(0x21);
     unsigned char a2 = inb(0xA1);
-
     outb(0x20, 0x11);
     outb(0xA0, 0x11);
     outb(0x21, 0x20);
@@ -82,7 +88,6 @@ void pic_remap() {
     outb(0xA1, 0x02);
     outb(0x21, 0x01);
     outb(0xA1, 0x01);
-
     outb(0x21, a1);
     outb(0xA1, a2);
 }
@@ -116,14 +121,29 @@ extern void idt_load(unsigned int);
 void k_install_idt() {
     idtp.limit = sizeof(struct idt_entry) * 256 - 1;
     idtp.base  = (unsigned int)&idt;
-    
     extern void timer_handler_stub();
     extern void keyboard_handler_stub();
-    
     idt_set_gate(32, (unsigned int)timer_handler_stub, 0x08, 0x8E);
     idt_set_gate(33, (unsigned int)keyboard_handler_stub, 0x08, 0x8E);
-    
     idt_load((unsigned int)&idtp);
+}
+
+void draw_grid() {
+    for (int i = 0; i < grid_height; i++) {
+        char buffer[256];
+        int pos = 0;
+        for (int j = 0; j < grid_width; j++) {
+            if (i == grid_sel_y && j == grid_sel_x) {
+                buffer[pos++] = '[';
+                buffer[pos++] = ']';
+            } else {
+                buffer[pos++] = ' ';
+                buffer[pos++] = '.';
+            }
+        }
+        buffer[pos] = '\0';
+        k_printf(buffer, grid_start_line + i);
+    }
 }
 
 void timer_handler() {
@@ -137,14 +157,34 @@ void timer_handler() {
         while (buffer[i]) i++;
         buffer[i] = 's';
         buffer[i+1] = '\0';
-        k_printf(buffer, 22);
+        k_printf(buffer, 2);
     }
     outb(0x20, 0x20);
 }
 
 void keyboard_handler() {
     unsigned char scancode = inb(0x60);
-    k_printf("Key pressed", 23);
+    switch(scancode) {
+        case 0x4B:
+            if (grid_sel_x > 0)
+                grid_sel_x--;
+            break;
+        case 0x4D:
+            if (grid_sel_x < grid_width - 1)
+                grid_sel_x++;
+            break;
+        case 0x48:
+            if (grid_sel_y > 0)
+                grid_sel_y--;
+            break;
+        case 0x50:
+            if (grid_sel_y < grid_height - 1)
+                grid_sel_y++;
+            break;
+        default:
+            break;
+    }
+    draw_grid();
     outb(0x20, 0x20);
 }
 
@@ -163,14 +203,12 @@ void kernel_loop() {
 void k_main() {
     k_clear_screen();
     disable_cursor();
-    k_printf("IT WORKS. Welcome to TetrOS", 0);
-
+    k_printf("it works. welcome to tetros", 0);
+    draw_grid();
     pic_remap();
     k_install_idt();
     init_timer();
     init_keyboard();
-    
     asm volatile ("sti");
-    
     kernel_loop();
 }
