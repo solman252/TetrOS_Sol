@@ -129,6 +129,14 @@ void k_install_idt() {
     idt_load((unsigned int)&idtp);
 }
 
+char[] shape_o = "11-11|11-11|11-11|11-11";
+char[] shape_i = "1-1-1-1|1111|1-1-1-1|1111";
+char[] shape_s = "011-110|10-11-01|011-110|10-11-01";
+char[] shape_z = "110-011|01-11-10|110-011|01-11-10";
+char[] shape_l = "10-10-11|111-100|11-01-01|001-111";
+char[] shape_j = "01-01-11|100-111|11-10-10|111-001";
+char[] shape_t = "111-010|01-11-01|010-111|10-11-10";
+
 void draw_grid() {
     for (int y = 0; y < grid_height; y++) {
         char buffer[256];
