@@ -151,7 +151,7 @@ void draw_grid() {
             }
         }
         buffer[pos] = '\0';
-        k_printf(buffer, grid_start_line + i);
+        k_printf(buffer, grid_start_line + y);
     }
 }
 
