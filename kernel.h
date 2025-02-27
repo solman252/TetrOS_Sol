@@ -2,13 +2,13 @@
 #define KERNEL_H
 
 //vga text mode color attribute
-#define WHITE_TXT 0x07
-#define YELLOW_TXT 0x3E
-#define CYAN_TXT 0x3B
-#define RED_TXT 0x04
+#define WHITE_TXT 0x0F
+#define YELLOW_TXT 0x0E
+#define CYAN_TXT 0x0B
+#define RED_TXT 0x0C
 #define GREEN_TXT 0x02
-#define ORANGE_TXT 0x14
-#define PINK_TXT 0x3D
+#define ORANGE_TXT 0x06
+#define PINK_TXT 0x0D
 #define PURPLE_TXT 0x05
 
 //vga functions
