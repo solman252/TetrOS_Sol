@@ -228,7 +228,7 @@ void draw_grid() {
     k_printf(line, top_margin);
     
     // get shape
-    int *rot;
+    int (*rot)[4];
     switch(current_shape) {
         case 0:
             rot = shape_o[current_rot];
@@ -257,15 +257,17 @@ void draw_grid() {
     };
     int center_x;
     int center_y;
-    int points[4];
+    int points[4][2];
     i = 0;
     for (int y = 0; y < 4; y++) {
-        int row[4] = rot[y];
+        int *row = rot[y];
         for (int x = 0; x < 4; x++) {
             int ch = row[x];
             int point[2] = {x,y};
             if (ch == 1 || ch == 2) {
-                points[i++] = point;
+                points[i][0] = x;
+		points[i][1] = y;
+		i++;
             }
             if (ch == 2) {
                 center_x = x;
@@ -273,14 +275,16 @@ void draw_grid() {
             }
         }
     }
-    int adjusted_points[4];
+    int adjusted_points[4][2];
     i = 0;
     for (int index = 0; index < 4; index++) {
-        int point[2] = adjusted_points[index];
+        int *point = adjusted_points[index];
         int x = point[0];
         int y = point[1];
         int new_point[2] = {x-center_x,y-center_y};
-        adjusted_points[i++] = new_point;
+	adjusted_points[i][0] = new_point[0];
+	adjusted_points[i][1] = new_point[1];
+	i++;
     }
 
     // draw grid rows with vertical borders using ║
@@ -294,7 +298,7 @@ void draw_grid() {
             int point[2] = {c,r};
             bool in_points = false;
             for(i=0;i<=4;i++) {
-                if (point == adjusted_points[i]) {
+                if (point[0] == adjusted_points[i][0] && point[1] == adjusted_points[i][1]) {
                     in_points = true;
                     break;
                 }
