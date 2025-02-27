@@ -291,7 +291,7 @@ void draw_grid() {
     }
     int adjusted_points[4][2];
     i = 0;
-    for (int index = 0; index < 4; index++) {
+    for (int index = 0; index <= 4; index++) {
         adjusted_points[i][0] = points[index][0]-center_x+grid_sel_x;
         adjusted_points[i][1] = points[index][1]-center_y+grid_sel_y;
         i++;
@@ -348,10 +348,6 @@ void draw_grid() {
     line[pos] = '\0';
     k_printf(line, top_margin + board_height - 1);
     
-    // update the attribute for the selected cell
-    int sel_line = top_margin + 1 + grid_sel_y;
-    int sel_col = left_margin + 1 + grid_sel_x * 2;
-    
     // choose the color based on current_shape using existing macros
     char col = WHITE_TXT;
     switch(current_shape) {
@@ -365,17 +361,25 @@ void draw_grid() {
     }
     unsigned char attr;
     if (highlight_bg) {
-        attr = (col << 4) | WHITE_TXT;
+        attr = (col << 4) | BLACK_TXT;
     } else {
         attr = col;
     }
     
-    // update video memory for the two characters in the selected cell
-    char *vidmem = (char *)0xb8000;
-    unsigned int offset = (sel_line * 80 + sel_col) * 2 + 1;
-    vidmem[offset] = attr;
-    offset = (sel_line * 80 + sel_col + 1) * 2 + 1;
-    vidmem[offset] = attr;
+    for (int index = 0; index <= 4; index++) {
+        int x = adjusted_points[index][0];
+        int y = adjusted_points[index][1];
+        if (x >= 0 && y >= 0 && x < grid_width && y < grid_height) {
+            int sel_line = top_margin + 1 + y;
+            int sel_col = left_margin + 1 + x * 2;
+            // update video memory for the two characters in the selected cell
+            char *vidmem = (char *)0xb8000;
+            unsigned int offset = (sel_line * 80 + sel_col) * 2 + 1;
+            vidmem[offset] = attr;
+            offset = (sel_line * 80 + sel_col + 1) * 2 + 1;
+            vidmem[offset] = attr;
+        };
+    }
 }
 
 void timer_handler() {
