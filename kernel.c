@@ -1,23 +1,5 @@
 #include "kernel.h"
 
-// using the provided color macros:
-// BLACK_TXT    0x00
-// BLUE_TXT     0x01
-// GREEN_TXT    0x02
-// CYAN_TXT     0x03
-// RED_TXT      0x04 
-// MAGENTA_TXT  0x05
-// BROWN_TXT    0x06
-// LIGHT_GRAY_TXT 0x07
-// GRAY_TXT     0x08
-// LIGHT_BLUE_TXT 0x09
-// LIGHT_GREEN_TXT 0x0A
-// LIGHT_CYAN_TXT 0x0B
-// LIGHT_RED_TXT  0x0C
-// LIGHT_MAGENTA_TXT 0x0D
-// LIGHT_YELLOW_TXT  0x0E
-// WHITE_TXT    0x0F
-
 const int grid_width = 10;
 const int grid_height = 20;
 
@@ -30,12 +12,55 @@ bool should_stamp = false;
 
 volatile unsigned int tick_count = 0;
 
+void set_vga_palette(int color_index, int r, int g, int b) {
+    outb(0x3C8, color_index); // Select the color index to modify
+    outb(0x3C9, r & 0x3F);    // Set red component (0-63)
+    outb(0x3C9, g & 0x3F);    // Set green component (0-63)
+    outb(0x3C9, b & 0x3F);    // Set blue component (0-63)
+}
+
+void set_custom_palette() {
+    set_vga_palette(0,  0,  0,  0);   // BLACK
+    set_vga_palette(1,  63, 63, 63);   // WHITE
+    set_vga_palette(2,  32, 32, 32);   // GRAY
+    set_vga_palette(3,  0,  63, 63);   // CYAN
+    set_vga_palette(4,  0,  0,  63);  // BLUE
+    set_vga_palette(5,  63, 32, 0);  // ORANGE
+    set_vga_palette(6,  63, 0, 0);  // YELLOW
+    set_vga_palette(7,  0,  63, 0);  // GREEN
+    set_vga_palette(8,  63, 0,  63);  // PURPLE
+    set_vga_palette(9,  63, 0,  0);  // RED
+    set_vga_palette(10, 16, 63, 63);  // LIGHT_CYAN
+    set_vga_palette(11, 63, 48, 16);  // LIGHT_ORANGE
+    set_vga_palette(12, 63, 63, 16);  // LIGHT_YELLOW
+    set_vga_palette(13, 16, 63, 16);  // LIGHT_GREEN
+    set_vga_palette(14, 63, 16, 63);  // LIGHT_PURPLE
+    set_vga_palette(15, 63, 16, 16);  // LIGHT_RED
+}
+#define BLACK 0x00
+#define WHITE 0x01
+#define GRAY 0x02
+#define CYAN 0x03
+#define BLUE 0x04
+#define ORANGE 0x05
+#define YELLOW 0x06
+#define GREEN 0x07
+#define PURPLE 0x08
+#define RED 0x09
+#define LIGHT_CYAN 0x0A
+#define LIGHT_BLUE 0x03 // lgiht blue = cyan
+#define LIGHT_ORANGE 0x0B
+#define LIGHT_YELLOW 0x0C
+#define LIGHT_GREEN 0x0D
+#define LIGHT_PURPLE 0x0E
+#define LIGHT_RED 0x0F
+
 void k_clear_screen() {
     char *vidmem = (char *)0xb8000;
     unsigned int i = 0;
     while (i < (80 * 25 * 2)) {
         vidmem[i++] = ' ';
-        vidmem[i++] = WHITE_TXT;
+        vidmem[i++] = WHITE;
     }
 }
 
@@ -49,7 +74,7 @@ unsigned int k_printf(char *message, unsigned int line) {
             message++;
         } else {
             vidmem[i++] = *message++;
-            vidmem[i++] = WHITE_TXT;
+            vidmem[i++] = WHITE;
         }
     }
     return 1;
@@ -64,7 +89,7 @@ unsigned int k_printf_at(char *message, unsigned int line, unsigned int pos) {
             message++;
         } else {
             vidmem[i++] = *message++;
-            vidmem[i++] = WHITE_TXT;
+            vidmem[i++] = WHITE;
         }
     }
     return 1;
@@ -170,33 +195,6 @@ void k_install_idt() {
     idt_set_gate(33, (unsigned int)keyboard_handler_stub, 0x08, 0x8E);
     idt_load((unsigned int)&idtp);
 }
-
-void set_vga_palette(int color_index, int r, int g, int b) {
-    outb(0x3C8, color_index); // Select the color index to modify
-    outb(0x3C9, r & 0x3F);    // Set red component (0-63)
-    outb(0x3C9, g & 0x3F);    // Set green component (0-63)
-    outb(0x3C9, b & 0x3F);    // Set blue component (0-63)
-}
-
-void set_custom_palette() {
-    set_vga_palette(0,  0,  0,  0);   // black
-    set_vga_palette(1,  63, 0,  0);   // bark red
-    set_vga_palette(2,  0,  63, 0);   // bright green
-    set_vga_palette(3,  63, 63, 0);   // yellow
-    set_vga_palette(4,  0,  0,  63);  // blue
-    set_vga_palette(5,  63, 0,  63);  // magenta
-    set_vga_palette(6,  0,  63, 63);  // cyan
-    set_vga_palette(7,  42, 42, 42);  // gray
-    set_vga_palette(8,  21, 21, 21);  // dark gray
-    set_vga_palette(9,  63, 21, 21);  // light red
-    set_vga_palette(10, 21, 63, 21);  // light green
-    set_vga_palette(11, 63, 63, 21);  // light yellow
-    set_vga_palette(12, 21, 21, 63);  // light blue
-    set_vga_palette(13, 63, 21, 63);  // light magenta
-    set_vga_palette(14, 21, 63, 63);  // light cyan
-    set_vga_palette(15, 63, 63, 63);  // white
-}
-
 
 // Shapes as defined previously
 int shape_o[4][4][4] = {
@@ -383,20 +381,20 @@ void draw_grid() {
     for (int y = 0; y < grid_height; y++) {
         for (int x = 0; x < grid_width; x++) {
             int p = tilemap[y][x];
-            char col = GRAY_TXT;
+            char col = GRAY;
             switch(p) {
-                case 0: col = GRAY_TXT; break;
-                case 1: col = LIGHT_YELLOW_TXT; break;
-                case 2: col = CYAN_TXT; break;
-                case 3: col = RED_TXT; break;
-                case 4: col = GREEN_TXT; break;
-                case 5: col = BROWN_TXT; break;
-                case 6: col = LIGHT_MAGENTA_TXT; break;
-                case 7: col = MAGENTA_TXT; break;
+                case 0: col = GRAY; break;
+                case 1: col = YELLOW; break;
+                case 2: col = CYAN; break;
+                case 3: col = GREEN; break;
+                case 4: col = RED; break;
+                case 5: col = ORANGE; break;
+                case 6: col = BLUE; break;
+                case 7: col = PURPLE; break;
             }
             unsigned char attr;
             if (highlight_bg && p != 0) {
-                attr = (col << 4) | BLACK_TXT;
+                attr = (col << 4) | BLACK;
             } else {
                 attr = col;
             }
@@ -412,19 +410,19 @@ void draw_grid() {
     }
 
     // choose the color based on current_shape using existing macros
-    char col = WHITE_TXT;
+    char col = WHITE;
     switch(current_shape) {
-        case 0: col = LIGHT_YELLOW_TXT; break;
-        case 1: col = CYAN_TXT; break;
-        case 2: col = RED_TXT; break;
-        case 3: col = GREEN_TXT; break;
-        case 4: col = BROWN_TXT; break;
-        case 5: col = LIGHT_MAGENTA_TXT; break;
-        case 6: col = MAGENTA_TXT; break;
+        case 0: col = YELLOW; break; // shape_o
+        case 1: col = CYAN; break; // shape_i
+        case 2: col = GREEN; break; // shape_s
+        case 3: col = RED; break; // shape_z
+        case 4: col = ORANGE; break; // shape_l
+        case 5: col = BLUE; break; // shape_j
+        case 6: col = PURPLE; break; // shape_t
     }
     unsigned char attr;
     if (highlight_bg) {
-        attr = (col << 4) | BLACK_TXT;
+        attr = (col << 4) | BLACK;
     } else {
         attr = col;
     }
@@ -521,9 +519,9 @@ void kernel_loop() {
 }
 
 void k_main() {
+    set_custom_palette();
     k_clear_screen();
     disable_cursor();
-    set_custom_palette();
     k_printf("it works. welcome to tetros", 0);
     draw_grid();
     pic_remap();
