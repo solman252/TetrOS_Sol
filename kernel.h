@@ -39,7 +39,6 @@ void idt_load(unsigned int);
 
 //device driver initialization
 void init_timer();
-void init_keyboard();
 
 //kernel main function
 void k_main();

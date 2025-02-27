@@ -20,7 +20,6 @@
 
 const int grid_width = 10;
 const int grid_height = 20;
-const int grid_start_line = 5;
 
 int grid_sel_x = 0;
 int grid_sel_y = 0;
@@ -209,7 +208,7 @@ void draw_grid() {
     int board_width = grid_width * 2 + 2;
     int board_height = grid_height + 2;
     int left_margin = (80 - board_width) / 2;
-    int top_margin = (25 - board_height) / 2;
+    int top_margin = (27 - board_height) / 2;
     
     char line[256];
     int pos, i;
@@ -307,7 +306,7 @@ void timer_handler() {
         while (buffer[i]) i++;
         buffer[i] = 's';
         buffer[i+1] = '\0';
-        k_printf(buffer, 2);
+        k_printf(buffer, 1);
     }
     outb(0x20, 0x20);
 }
@@ -347,9 +346,7 @@ void keyboard_handler() {
 }
 
 void init_timer() {
-}
-
-void init_keyboard() {
+    k_printf("0s", 1);
 }
 
 void kernel_loop() {
