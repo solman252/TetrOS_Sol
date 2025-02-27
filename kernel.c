@@ -25,7 +25,8 @@ int grid_sel_x = 0;
 int grid_sel_y = 0;
 int current_shape = 0;
 int current_rot = 0;
-int highlight_bg = 1; // 0 = normal, 1 = highlighted
+bool highlight_bg = true;
+bool should_stamp = false;
 
 volatile unsigned int tick_count = 0;
 
@@ -214,12 +215,17 @@ int shape_t[4][4][4] = {
     { {1,0,0,0}, {2,1,0,0}, {1,0,0,0}, {0,0,0,0} }
 };
 
+
+
+int tilemap[20][10];
+
 //
 // draw_grid now centers the board and draws an outline around the grid
 // using double-line box drawing characters from code page 437:
 // ╔ = 0xC9 ═ = 0xCD ╗ = 0xBB, ║ = 0xBA, ╚ = 0xC8 and ╝ = 0xBC
 //
 void draw_grid() {
+    // shape_t[0][0][0] = 5;
     int board_width = grid_width * 2 + 2;
     int board_height = grid_height + 2;
     int left_margin = (80 - board_width) / 2;
@@ -305,20 +311,19 @@ void draw_grid() {
         }
         line[pos++] = 0xBA;  // ║
         for (int c = 0; c < grid_width; c++) {
-            int point[2] = {c,r};
             bool in_points = false;
             for(i=0;i<=4;i++) {
-                if (point[0] == adjusted_points[i][0] && point[1] == adjusted_points[i][1]) {
+                if (c == adjusted_points[i][0] && r == adjusted_points[i][1]) {
                     in_points = true;
                     break;
                 }
             }
-            if (in_points) {
+            if (in_points || tilemap[r][c] > 0) {
                 line[pos++] = '[';
                 line[pos++] = ']';
             } else {
-                line[pos++] = ' ';
-                line[pos++] = '.';
+                line[pos++] = 0xc4;
+                line[pos++] = 0xb4;
             }
         }
         line[pos++] = 0xBA;  // ║
@@ -348,6 +353,37 @@ void draw_grid() {
     line[pos] = '\0';
     k_printf(line, top_margin + board_height - 1);
     
+    for (int y = 0; y < grid_height; y++) {
+        for (int x = 0; x < grid_width; x++) {
+            int p = tilemap[y][x];
+            char col = GRAY_TXT;
+            switch(p) {
+                case 0: col = GRAY_TXT; break;
+                case 1: col = LIGHT_YELLOW_TXT; break;
+                case 2: col = CYAN_TXT; break;
+                case 3: col = RED_TXT; break;
+                case 4: col = GREEN_TXT; break;
+                case 5: col = BROWN_TXT; break;
+                case 6: col = LIGHT_MAGENTA_TXT; break;
+                case 7: col = MAGENTA_TXT; break;
+            }
+            unsigned char attr;
+            if (highlight_bg && p != 0) {
+                attr = (col << 4) | BLACK_TXT;
+            } else {
+                attr = col;
+            }
+            int sel_line = top_margin + 1 + y;
+            int sel_col = left_margin + 1 + x * 2;
+            // update video memory for the two characters in the selected cell
+            char *vidmem = (char *)0xb8000;
+            unsigned int offset = (sel_line * 80 + sel_col) * 2 + 1;
+            vidmem[offset] = attr;
+            offset = (sel_line * 80 + sel_col + 1) * 2 + 1;
+            vidmem[offset] = attr;
+        }
+    }
+
     // choose the color based on current_shape using existing macros
     char col = WHITE_TXT;
     switch(current_shape) {
@@ -365,11 +401,17 @@ void draw_grid() {
     } else {
         attr = col;
     }
-    
+    bool persis_should_stamp = should_stamp;
+    if (should_stamp) {
+        should_stamp = false;
+    }
     for (int index = 0; index <= 4; index++) {
         int x = adjusted_points[index][0];
         int y = adjusted_points[index][1];
         if (x >= 0 && y >= 0 && x < grid_width && y < grid_height) {
+            if (persis_should_stamp) {
+                tilemap[y][x] = 1+current_shape;
+            }
             int sel_line = top_margin + 1 + y;
             int sel_col = left_margin + 1 + x * 2;
             // update video memory for the two characters in the selected cell
@@ -428,7 +470,10 @@ void keyboard_handler() {
             if (current_rot >= 4)
                 current_rot = 0;
             break;
-        case 0x3D: // f3 key to toggle highlight/background color
+        case 0x3D: // f3 key to stamp
+            should_stamp = true;
+            break;
+        case 0x3E: // f4 key to toggle highlight/background color
             highlight_bg = !highlight_bg;
             break;
         default:
