@@ -1,5 +1,23 @@
 #include "kernel.h"
 
+// using the provided color macros:
+// BLACK_TXT    0x00
+// BLUE_TXT     0x01
+// GREEN_TXT    0x02
+// CYAN_TXT     0x03
+// RED_TXT      0x04 
+// MAGENTA_TXT  0x05
+// BROWN_TXT    0x06
+// LIGHT_GRAY_TXT 0x07
+// GRAY_TXT     0x08
+// LIGHT_BLUE_TXT 0x09
+// LIGHT_GREEN_TXT 0x0A
+// LIGHT_CYAN_TXT 0x0B
+// LIGHT_RED_TXT  0x0C
+// LIGHT_MAGENTA_TXT 0x0D
+// LIGHT_YELLOW_TXT  0x0E
+// WHITE_TXT    0x0F
+
 const int grid_width = 10;
 const int grid_height = 20;
 const int grid_start_line = 5;
@@ -7,6 +25,7 @@ const int grid_start_line = 5;
 int grid_sel_x = 0;
 int grid_sel_y = 0;
 int current_shape = 0;
+int square_mode = 0;
 int highlight_bg = 1; // 0 = normal, 1 = highlighted
 
 volatile unsigned int tick_count = 0;
@@ -31,21 +50,6 @@ unsigned int k_printf(char *message, unsigned int line) {
         } else {
             vidmem[i++] = *message++;
             vidmem[i++] = WHITE_TXT;
-        }
-    }
-    return 1;
-}
-unsigned int k_printf_col(char *message, unsigned int line, char col) {
-    char *vidmem = (char *)0xb8000;
-    unsigned int i = line * 80 * 2;
-    while (*message) {
-        if (*message == '\n') {
-            line++;
-            i = line * 80 * 2;
-            message++;
-        } else {
-            vidmem[i++] = *message++;
-            vidmem[i++] = col;
         }
     }
     return 1;
@@ -152,52 +156,144 @@ void k_install_idt() {
     idt_load((unsigned int)&idtp);
 }
 
-int shape_o[4][4][4] = {{{1,1,0,0},{2,1,0,0},{0,0,0,0},{0,0,0,0}},{{1,1,0,0},{2,1,0,0},{0,0,0,0},{0,0,0,0}},{{1,1,0,0},{2,1,0,0},{0,0,0,0},{0,0,0,0}},{{1,1,0,0},{2,1,0,0},{0,0,0,0},{0,0,0,0}}};
-int shape_i[4][4][4] = {{{1,0,0,0},{2,0,0,0},{1,0,0,0},{1,0,0,0}},{{1,1,2,1},{0,0,0,0},{0,0,0,0},{0,0,0,0}},{{1,0,0,0},{1,0,0,0},{2,0,0,0},{1,0,0,0}},{{1,2,1,1},{0,0,0,0},{0,0,0,0},{0,0,0,0}}};
-int shape_s[4][4][4] = {{{0,1,1,0},{1,2,0,0},{0,0,0,0},{0,0,0,0}},{{1,0,0,0},{2,1,0,0},{0,1,0,0},{0,0,0,0}},{{0,2,1,0},{1,1,0,0},{0,0,0,0},{0,0,0,0}},{{1,0,0,0},{1,2,0,0},{0,1,0,0},{0,0,0,0}}};
-int shape_z[4][4][4] = {{{1,1,0,0},{0,2,1,0},{0,0,0,0},{0,0,0,0}},{{0,1,0,0},{2,1,0,0},{1,0,0,0},{0,0,0,0}},{{1,2,0,0},{0,1,1,0},{0,0,0,0},{0,0,0,0}},{{0,1,0,0},{1,2,0,0},{1,0,0,0},{0,0,0,0}}};
-int shape_l[4][4][4] = {{{1,0,0,0},{2,0,0,0},{1,1,0,0},{0,0,0,0}},{{1,2,1,0},{1,0,0,0},{0,0,0,0},{0,0,0,0}},{{1,1,0,0},{0,2,0,0},{0,1,0,0},{0,0,0,0}},{{0,0,1,0},{1,2,1,0},{0,0,0,0},{0,0,0,0}}};
-int shape_j[4][4][4] = {{{0,1,0,0},{0,2,0,0},{1,1,0,0},{0,0,0,0}},{{1,0,0,0},{1,2,1,0},{0,0,0,0},{0,0,0,0}},{{1,1,0,0},{2,0,0,0},{1,0,0,0},{0,0,0,0}},{{1,2,1,0},{0,0,1,0},{0,0,0,0},{0,0,0,0}}};
-int shape_t[4][4][4] = {{{1,2,1,0},{0,1,0,0},{0,0,0,0},{0,0,0,0}},{{0,1,0,0},{1,2,0,0},{0,1,0,0},{0,0,0,0}},{{0,1,0,0},{1,2,1,0},{0,0,0,0},{0,0,0,0}},{{1,0,0,0},{2,1,0,0},{1,0,0,0},{0,0,0,0}}};
+// Shapes as defined previously
+int shape_o[4][4][4] = {
+    { {1,1,0,0}, {2,1,0,0}, {0,0,0,0}, {0,0,0,0} },
+    { {1,1,0,0}, {2,1,0,0}, {0,0,0,0}, {0,0,0,0} },
+    { {1,1,0,0}, {2,1,0,0}, {0,0,0,0}, {0,0,0,0} },
+    { {1,1,0,0}, {2,1,0,0}, {0,0,0,0}, {0,0,0,0} }
+};
+int shape_i[4][4][4] = {
+    { {1,0,0,0}, {2,0,0,0}, {1,0,0,0}, {1,0,0,0} },
+    { {1,1,2,1}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0} },
+    { {1,0,0,0}, {1,0,0,0}, {2,0,0,0}, {1,0,0,0} },
+    { {1,2,1,1}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0} }
+};
+int shape_s[4][4][4] = {
+    { {0,1,1,0}, {1,2,0,0}, {0,0,0,0}, {0,0,0,0} },
+    { {1,0,0,0}, {2,1,0,0}, {0,1,0,0}, {0,0,0,0} },
+    { {0,2,1,0}, {1,1,0,0}, {0,0,0,0}, {0,0,0,0} },
+    { {1,0,0,0}, {1,2,0,0}, {0,1,0,0}, {0,0,0,0} }
+};
+int shape_z[4][4][4] = {
+    { {1,1,0,0}, {0,2,1,0}, {0,0,0,0}, {0,0,0,0} },
+    { {0,1,0,0}, {2,1,0,0}, {1,0,0,0}, {0,0,0,0} },
+    { {1,2,0,0}, {0,1,1,0}, {0,0,0,0}, {0,0,0,0} },
+    { {0,1,0,0}, {1,2,0,0}, {1,0,0,0}, {0,0,0,0} }
+};
+int shape_l[4][4][4] = {
+    { {1,0,0,0}, {2,0,0,0}, {1,1,0,0}, {0,0,0,0} },
+    { {1,2,1,0}, {1,0,0,0}, {0,0,0,0}, {0,0,0,0} },
+    { {1,1,0,0}, {0,2,0,0}, {0,1,0,0}, {0,0,0,0} },
+    { {0,0,1,0}, {1,2,1,0}, {0,0,0,0}, {0,0,0,0} }
+};
+int shape_j[4][4][4] = {
+    { {0,1,0,0}, {0,2,0,0}, {1,1,0,0}, {0,0,0,0} },
+    { {1,0,0,0}, {1,2,1,0}, {0,0,0,0}, {0,0,0,0} },
+    { {1,1,0,0}, {2,0,0,0}, {1,0,0,0}, {0,0,0,0} },
+    { {1,2,1,0}, {0,0,1,0}, {0,0,0,0}, {0,0,0,0} }
+};
+int shape_t[4][4][4] = {
+    { {1,2,1,0}, {0,1,0,0}, {0,0,0,0}, {0,0,0,0} },
+    { {0,1,0,0}, {1,2,0,0}, {0,1,0,0}, {0,0,0,0} },
+    { {0,1,0,0}, {1,2,1,0}, {0,0,0,0}, {0,0,0,0} },
+    { {1,0,0,0}, {2,1,0,0}, {1,0,0,0}, {0,0,0,0} }
+};
 
+//
+// draw_grid now centers the board and draws an outline around the grid
+// using double-line box drawing characters from code page 437:
+// ╔ = 0xC9 ═ = 0xCD ╗ = 0xBB, ║ = 0xBA, ╚ = 0xC8 and ╝ = 0xBC
+//
 void draw_grid() {
-    for (int y = 0; y < grid_height; y++) {
-        char buffer[256];
-        int pos = 0;
-        for (int x = 0; x < grid_width; x++) {
-            if (y == grid_sel_y && x == grid_sel_x) {
-                buffer[pos++] = '[';
-                buffer[pos++] = ']';
+    int board_width = grid_width * 2 + 2;
+    int board_height = grid_height + 2;
+    int left_margin = (80 - board_width) / 2;
+    int top_margin = (25 - board_height) / 2;
+    
+    char line[256];
+    int pos, i;
+    
+    // draw top border using ╔, ═, ╗
+    pos = 0;
+    for (i = 0; i < left_margin; i++) {
+        line[pos++] = ' ';
+    }
+    line[pos++] = 0xC9;  // ╔
+    for (i = 0; i < board_width - 2; i++) {
+        line[pos++] = 0xCD;  // ═
+    }
+    line[pos++] = 0xBB;  // ╗
+    line[pos] = '\0';
+    k_printf(line, top_margin);
+    
+    // draw grid rows with vertical borders using ║
+    for (int r = 0; r < grid_height; r++) {
+        pos = 0;
+        for (i = 0; i < left_margin; i++) {
+            line[pos++] = ' ';
+        }
+        line[pos++] = 0xBA;  // ║
+        for (int c = 0; c < grid_width; c++) {
+            if (r == grid_sel_y && c == grid_sel_x) {
+                if (square_mode == 0) {
+                    line[pos++] = '[';
+                    line[pos++] = ']';
+                } else {
+                    line[pos++] = ' ';
+                    line[pos++] = 0xdc;
+                }
             } else {
-                buffer[pos++] = 0xc5;
-                buffer[pos++] = 0xc5;
+                line[pos++] = ' ';
+                line[pos++] = '.';
             }
         }
-        buffer[pos] = '\0';
-        k_printf_col(buffer, grid_start_line + y,GRAY_TXT);
+        line[pos++] = 0xBA;  // ║
+        line[pos] = '\0';
+        k_printf(line, top_margin + 1 + r);
     }
-    // choose the color based on the current shape
+    
+    // draw bottom border using ╚, ═, ╝
+    pos = 0;
+    for (i = 0; i < left_margin; i++) {
+        line[pos++] = ' ';
+    }
+    line[pos++] = 0xC8;  // ╚
+    for (i = 0; i < board_width - 2; i++) {
+        line[pos++] = 0xCD;  // ═
+    }
+    line[pos++] = 0xBC;  // ╝
+    line[pos] = '\0';
+    k_printf(line, top_margin + board_height - 1);
+    
+    // update the attribute for the selected cell
+    int sel_line = top_margin + 1 + grid_sel_y;
+    int sel_col = left_margin + 1 + grid_sel_x * 2;
+    
+    // choose the color based on current_shape using existing macros
     char col = WHITE_TXT;
     switch(current_shape) {
         case 0: col = LIGHT_YELLOW_TXT; break;
-        case 1: col = LIGHT_CYAN_TXT; break;
-        case 2: col = LIGHT_RED_TXT; break;
+        case 1: col = CYAN_TXT; break;
+        case 2: col = RED_TXT; break;
         case 3: col = GREEN_TXT; break;
         case 4: col = BROWN_TXT; break;
         case 5: col = LIGHT_MAGENTA_TXT; break;
         case 6: col = MAGENTA_TXT; break;
     }
-    
-    // if highlight_bg toggled use same color as defined for text but for the background
     unsigned char attr;
-    if(highlight_bg) {
+    if (highlight_bg) {
         attr = (col << 4) | WHITE_TXT;
     } else {
         attr = col;
     }
-
-    k_set_color_at(attr, grid_start_line + grid_sel_y, 2 * grid_sel_x);
-    k_set_color_at(attr, grid_start_line + grid_sel_y, 1 + (2 * grid_sel_x));
+    
+    // update video memory for the two characters in the selected cell
+    char *vidmem = (char *)0xb8000;
+    unsigned int offset = (sel_line * 80 + sel_col) * 2 + 1;
+    vidmem[offset] = attr;
+    offset = (sel_line * 80 + sel_col + 1) * 2 + 1;
+    vidmem[offset] = attr;
 }
 
 void timer_handler() {
@@ -219,28 +315,28 @@ void timer_handler() {
 void keyboard_handler() {
     unsigned char scancode = inb(0x60);
     switch(scancode) {
-        case 0x4B: //left key to move selected x left
+        case 0x4B: // left key
             if (grid_sel_x > 0)
                 grid_sel_x--;
             break;
-        case 0x4D: //right key to move selected x right
+        case 0x4D: // right key
             if (grid_sel_x < grid_width - 1)
                 grid_sel_x++;
             break;
-        case 0x48: //down key to move selected y down
+        case 0x48: // down key (moves grid up)
             if (grid_sel_y > 0)
                 grid_sel_y--;
             break;
-        case 0x50: //up key to move selected y up
+        case 0x50: // up key (moves grid down)
             if (grid_sel_y < grid_height - 1)
                 grid_sel_y++;
             break;
-        case 0x3B: //f1 key to change current shape
+        case 0x3B: // f1 key to change current shape
             current_shape++;
-            if(current_shape >= 7)
+            if (current_shape >= 7)
                 current_shape = 0;
             break;
-        case 0x3C: //f2 key to toggle highlight/background color of the selection
+        case 0x3C: // f2 key to toggle highlight/background color
             highlight_bg = !highlight_bg;
             break;
         default:
