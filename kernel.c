@@ -8,6 +8,7 @@ int grid_sel_x = 0;
 int grid_sel_y = 0;
 int current_shape = 0;
 int square_mode = 1;
+int highlight_bg = 0; // 0 = normal, 1 = highlighted
 
 volatile unsigned int tick_count = 0;
 
@@ -35,10 +36,11 @@ unsigned int k_printf(char *message, unsigned int line) {
     }
     return 1;
 }
-unsigned int k_set_color_at(unsigned char col, unsigned int line, unsigned int pos) {
+
+unsigned int k_set_color_at(unsigned char attr, unsigned int line, unsigned int pos) {
     char *vidmem = (char *)0xb8000;
-    unsigned int i = 1+(line * 80 * 2)+(2*pos);
-    vidmem[i++] = col;
+    unsigned int i = 1 + (line * 80 * 2) + (2 * pos);
+    vidmem[i] = attr;
     return 1;
 }
 
@@ -136,6 +138,8 @@ void k_install_idt() {
     idt_load((unsigned int)&idtp);
 }
 
+// fix the shapes to be like in the old version
+
 int shape_o[4][4][4] = {
     { // rot 1 (default)
         {1,1,0,0},
@@ -162,6 +166,7 @@ int shape_o[4][4][4] = {
         {0,0,0,0}
     }
 };
+
 int shape_i[4][4][4] = {
     { // rot 1 (default)
         {1,0,0,0},
@@ -188,6 +193,7 @@ int shape_i[4][4][4] = {
         {0,0,0,0}
     }
 };
+
 int shape_s[4][4][4] = {
     { // rot 1 (default)
         {0,1,1,0},
@@ -214,6 +220,7 @@ int shape_s[4][4][4] = {
         {0,0,0,0}
     }
 };
+
 int shape_z[4][4][4] = {
     { // rot 1 (default)
         {1,1,0,0},
@@ -240,6 +247,7 @@ int shape_z[4][4][4] = {
         {0,0,0,0}
     }
 };
+
 int shape_l[4][4][4] = {
     { // rot 1 (default)
         {1,0,0,0},
@@ -266,6 +274,7 @@ int shape_l[4][4][4] = {
         {0,0,0,0}
     }
 };
+
 int shape_j[4][4][4] = {
     { // rot 1 (default)
         {0,1,0,0},
@@ -292,6 +301,7 @@ int shape_j[4][4][4] = {
         {0,0,0,0}
     }
 };
+
 int shape_t[4][4][4] = {
     { // rot 1 (default)
         {1,2,1,0},
@@ -319,7 +329,6 @@ int shape_t[4][4][4] = {
     }
 };
 
-
 void draw_grid() {
     for (int y = 0; y < grid_height; y++) {
         char buffer[256];
@@ -344,38 +353,35 @@ void draw_grid() {
         buffer[pos] = '\0';
         k_printf(buffer, grid_start_line + y);
     }
+    // choose the color based on the current shape
     char col = WHITE_TXT;
     switch(current_shape) {
-        case 0:
-            col = YELLOW_TXT;
-            break;
-        case 1:
-            col = CYAN_TXT;
-            break;
-        case 2:
-            col = RED_TXT;
-            break;
-        case 3:
-            col = GREEN_TXT;
-            break;
-        case 4:
-            col = ORANGE_TXT;
-            break;
-        case 5:
-            col = PINK_TXT;
-            break;
-        case 6:
-            col = PURPLE_TXT;
-            break;
-    };
+        case 0: col = YELLOW_TXT; break;
+        case 1: col = CYAN_TXT; break;
+        case 2: col = RED_TXT; break;
+        case 3: col = GREEN_TXT; break;
+        case 4: col = ORANGE_TXT; break;
+        case 5: col = PINK_TXT; break;
+        case 6: col = PURPLE_TXT; break;
+    }
     
+    // if highlight_bg is toggled, use the same color as defined for text but for the background,
+    // by shifting the color value into the background nibble and using WHITE_TXT as the foreground
+    unsigned char attr;
+    if(highlight_bg) {
+        attr = (col << 4) | WHITE_TXT;
+    } else {
+        attr = col;
+    }
+    
+    // set the attribute for the selection cell based on the current mode
     switch(square_mode){
         case 0:
-            k_set_color_at(col,grid_start_line+grid_sel_y,2*(grid_sel_x));
-            k_set_color_at(col,grid_start_line+grid_sel_y,1+(2*(grid_sel_x)));
+            k_set_color_at(attr, grid_start_line + grid_sel_y, 2 * grid_sel_x);
+            k_set_color_at(attr, grid_start_line + grid_sel_y, 1 + (2 * grid_sel_x));
             break;
         case 1:
-            k_set_color_at(col,grid_start_line+grid_sel_y,1+(2*(grid_sel_x)));
+            k_set_color_at(attr, grid_start_line + grid_sel_y, 1 + (2 * grid_sel_x));
             break;
     }
 }
@@ -417,19 +423,17 @@ void keyboard_handler() {
             break;
         case 0x3B:
             switch(square_mode) {
-                case 0:
-                    square_mode = 1;
-                    break;
-                case 1:
-                    square_mode = 0;
-                    break;
+                case 0: square_mode = 1; break;
+                case 1: square_mode = 0; break;
             };
             break;
         case 0x3C:
             current_shape++;
-            if(current_shape >= 7) {
+            if(current_shape >= 7)
                 current_shape = 0;
-            };
+            break;
+        case 0x3D: // f3 key to toggle highlight/background color of the selection
+            highlight_bg = !highlight_bg;
             break;
         default:
             break;
