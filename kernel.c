@@ -26,25 +26,16 @@ void set_custom_palette() {
     set_vga_palette(3,  0,  55, 55);  // CYAN
     set_vga_palette(4,  0,  0,  63);  // BLUE
     set_vga_palette(5,  63, 32, 0);   // ORANGE
-    set_vga_palette(7,  0,  63, 0);   // GREEN
-
-    set_vga_palette(20,  55, 55, 0);  // YELLOW               6 ISNT SET, USE 0x14 == 20
-    set_vga_palette(56,  63, 0,  63); // PURPLE               8 ISNT SET, USE 0x38 == 56
-    set_vga_palette(57,  63, 0,  0);  // RED                  9 ISNT SET, USE 0x39 == 57
+    set_vga_palette(7,  0,  50, 0);   // GREEN
+    set_vga_palette(20, 50, 50, 0);   // YELLOW               6 ISNT SET, USE 0x14 == 20
+    set_vga_palette(56, 63, 0,  63);  // PURPLE               8 ISNT SET, USE 0x38 == 56
+    set_vga_palette(57, 63, 0,  0);   // RED                  9 ISNT SET, USE 0x39 == 57
     set_vga_palette(58, 50, 63, 63);  // LIGHT_CYAN           10 ISNT SET, USE 0x3A == 58
     set_vga_palette(59, 63, 48, 32);  // LIGHT_ORANGE         11 ISNT SET, USE 0x3B == 59
     set_vga_palette(60, 63, 63, 50);  // LIGHT_YELLOW         12 ISNT SET, USE 0x3C == 60
     set_vga_palette(61, 50, 63, 50);  // LIGHT_GREEN          13 ISNT SET, USE 0x3D == 61
     set_vga_palette(62, 63, 48, 63);  // LIGHT_PURPLE         14 ISNT SET, USE 0x3E == 62
     set_vga_palette(63, 63, 32, 32);  // LIGHT_RED            15 ISNT SET, USE 0x3F == 63
-    // 0x06 ISNT SET
-    // 0x08 ISNT SET
-    // 0x09 ISNT SET
-    // 0x0A ISNT SET
-    // 0x0B ISNT SET
-    // 0x0D ISNT SET
-    // 0x0E ISNT SET
-    // 0x0F ISNT SET
 }
 #define BLACK 0x00
 #define WHITE 0x01
@@ -391,19 +382,20 @@ void draw_grid() {
         for (int x = 0; x < grid_width; x++) {
             int p = tilemap[y][x];
             char col = GRAY;
+            char col_inner = WHITE;
             switch(p) {
-                case 0: col = GRAY; break;
-                case 1: col = YELLOW; break;
-                case 2: col = CYAN; break;
-                case 3: col = GREEN; break;
-                case 4: col = RED; break;
-                case 5: col = ORANGE; break;
-                case 6: col = BLUE; break;
-                case 7: col = PURPLE; break;
+                case 0: col = GRAY; col_inner = WHITE; break;
+                case 1: col = YELLOW; col_inner = LIGHT_YELLOW; break;
+                case 2: col = CYAN; col_inner = LIGHT_CYAN; break;
+                case 3: col = GREEN; col_inner = LIGHT_GREEN; break;
+                case 4: col = RED; col_inner = LIGHT_RED; break;
+                case 5: col = ORANGE; col_inner = LIGHT_ORANGE; break;
+                case 6: col = BLUE; col_inner = LIGHT_BLUE; break;
+                case 7: col = PURPLE; col_inner = LIGHT_PURPLE; break;
             }
             unsigned char attr;
             if (highlight_bg && p != 0) {
-                attr = (col << 4) | BLACK;
+                attr = (col << 4) | col_inner;
             } else {
                 attr = col;
             }
