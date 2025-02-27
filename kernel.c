@@ -6,7 +6,8 @@ const int grid_start_line = 5;
 
 int grid_sel_x = 0;
 int grid_sel_y = 0;
-int square_mode = 0;
+int current_shape = 0;
+int square_mode = 1;
 
 volatile unsigned int tick_count = 0;
 
