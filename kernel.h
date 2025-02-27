@@ -19,6 +19,9 @@
 #define LIGHT_MAGENTA_TXT 0x0D
 #define LIGHT_YELLOW_TXT 0x0E
 #define WHITE_TXT 0x0F
+#define bool _Bool
+#define true 1
+#define false 0
 
 //vga functions
 void k_clear_screen();

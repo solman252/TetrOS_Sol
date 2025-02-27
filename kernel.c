@@ -24,6 +24,7 @@ const int grid_height = 20;
 int grid_sel_x = 0;
 int grid_sel_y = 0;
 int current_shape = 0;
+int current_rot = 0;
 int square_mode = 0;
 int highlight_bg = 1; // 0 = normal, 1 = highlighted
 
@@ -226,6 +227,62 @@ void draw_grid() {
     line[pos] = '\0';
     k_printf(line, top_margin);
     
+    // get shape
+    int *rot;
+    switch(current_shape) {
+        case 0:
+            rot = shape_o[current_rot];
+            break;
+        case 1:
+            rot = shape_i[current_rot];
+            break;
+        case 2:
+            rot = shape_s[current_rot];
+            break;
+        case 3:
+            rot = shape_z[current_rot];
+            break;
+        case 4:
+            rot = shape_l[current_rot];
+            break;
+        case 5:
+            rot = shape_j[current_rot];
+            break;
+        case 6:
+            rot = shape_t[current_rot];
+            break;
+        default:
+            rot = shape_o[current_rot];
+            break;
+    };
+    int center_x;
+    int center_y;
+    int points[4];
+    i = 0;
+    for (int y = 0; y < 4; y++) {
+        int row[4] = rot[y];
+        for (int x = 0; x < 4; x++) {
+            int ch = row[x];
+            int point[2] = {x,y};
+            if (ch == 1 || ch == 2) {
+                points[i++] = point;
+            }
+            if (ch == 2) {
+                center_x = x;
+                center_y = y;
+            }
+        }
+    }
+    int adjusted_points[4];
+    i = 0;
+    for (int index = 0; index < 4; index++) {
+        int point[2] = adjusted_points[index];
+        int x = point[0];
+        int y = point[1];
+        int new_point[2] = {x-center_x,y-center_y};
+        adjusted_points[i++] = new_point;
+    }
+
     // draw grid rows with vertical borders using ║
     for (int r = 0; r < grid_height; r++) {
         pos = 0;
@@ -234,7 +291,15 @@ void draw_grid() {
         }
         line[pos++] = 0xBA;  // ║
         for (int c = 0; c < grid_width; c++) {
-            if (r == grid_sel_y && c == grid_sel_x) {
+            int point[2] = {c,r};
+            bool in_points = false;
+            for(i=0;i<=4;i++) {
+                if (point == adjusted_points[i]) {
+                    in_points = true;
+                    break;
+                }
+            }
+            if (in_points) {
                 if (square_mode == 0) {
                     line[pos++] = '[';
                     line[pos++] = ']';
@@ -331,11 +396,17 @@ void keyboard_handler() {
                 grid_sel_y++;
             break;
         case 0x3B: // f1 key to change current shape
+            current_rot = 0;
             current_shape++;
             if (current_shape >= 7)
                 current_shape = 0;
             break;
-        case 0x3C: // f2 key to toggle highlight/background color
+        case 0x3C: // f2 key to change shape rotation
+            current_rot++;
+            if (current_rot >= 4)
+                current_rot = 0;
+            break;
+        case 0x3D: // f3 key to toggle highlight/background color
             highlight_bg = !highlight_bg;
             break;
         default:
