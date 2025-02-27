@@ -7,7 +7,6 @@ const int grid_start_line = 5;
 int grid_sel_x = 0;
 int grid_sel_y = 0;
 int current_shape = 0;
-int square_mode = 0;
 int highlight_bg = 1; // 0 = normal, 1 = highlighted
 
 volatile unsigned int tick_count = 0;
@@ -335,16 +334,8 @@ void draw_grid() {
         int pos = 0;
         for (int x = 0; x < grid_width; x++) {
             if (y == grid_sel_y && x == grid_sel_x) {
-                switch(square_mode){
-                    case 0:
-                        buffer[pos++] = '[';
-                        buffer[pos++] = ']';
-                        break;
-                    case 1:
-                        buffer[pos++] = ' ';
-                        buffer[pos++] = 0xdc;
-                        break;
-                }
+                buffer[pos++] = '[';
+                buffer[pos++] = ']';
             } else {
                 buffer[pos++] = ' ';
                 buffer[pos++] = '.';
@@ -372,17 +363,9 @@ void draw_grid() {
     } else {
         attr = col;
     }
-    
-    // set the attribute for the selection cell based on the current mode
-    switch(square_mode){
-        case 0:
-            k_set_color_at(attr, grid_start_line + grid_sel_y, 2 * grid_sel_x);
-            k_set_color_at(attr, grid_start_line + grid_sel_y, 1 + (2 * grid_sel_x));
-            break;
-        case 1:
-            k_set_color_at(attr, grid_start_line + grid_sel_y, 1 + (2 * grid_sel_x));
-            break;
-    }
+
+    k_set_color_at(attr, grid_start_line + grid_sel_y, 2 * grid_sel_x);
+    k_set_color_at(attr, grid_start_line + grid_sel_y, 1 + (2 * grid_sel_x));
 }
 
 void timer_handler() {
@@ -404,34 +387,28 @@ void timer_handler() {
 void keyboard_handler() {
     unsigned char scancode = inb(0x60);
     switch(scancode) {
-        case 0x4B:
+        case 0x4B: //left key to move selected x left
             if (grid_sel_x > 0)
                 grid_sel_x--;
             break;
-        case 0x4D:
+        case 0x4D: //right key to move selected x right
             if (grid_sel_x < grid_width - 1)
                 grid_sel_x++;
             break;
-        case 0x48:
+        case 0x48: //down key to move selected y down
             if (grid_sel_y > 0)
                 grid_sel_y--;
             break;
-        case 0x50:
+        case 0x50: //up key to move selected y up
             if (grid_sel_y < grid_height - 1)
                 grid_sel_y++;
             break;
-        case 0x3B:
-            switch(square_mode) {
-                case 0: square_mode = 1; break;
-                case 1: square_mode = 0; break;
-            };
-            break;
-        case 0x3C:
+        case 0x3B: //f1 key to change current shape
             current_shape++;
             if(current_shape >= 7)
                 current_shape = 0;
             break;
-        case 0x3D: //f3 key to toggle highlight/background color of the selection
+        case 0x3C: //f2 key to toggle highlight/background color of the selection
             highlight_bg = !highlight_bg;
             break;
         default:
