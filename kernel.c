@@ -171,6 +171,33 @@ void k_install_idt() {
     idt_load((unsigned int)&idtp);
 }
 
+void set_vga_palette(int color_index, int r, int g, int b) {
+    outb(0x3C8, color_index); // Select the color index to modify
+    outb(0x3C9, r & 0x3F);    // Set red component (0-63)
+    outb(0x3C9, g & 0x3F);    // Set green component (0-63)
+    outb(0x3C9, b & 0x3F);    // Set blue component (0-63)
+}
+
+void set_custom_palette() {
+    set_vga_palette(0,  0,  0,  0);   // black
+    set_vga_palette(1,  63, 0,  0);   // bark red
+    set_vga_palette(2,  0,  63, 0);   // bright green
+    set_vga_palette(3,  63, 63, 0);   // yellow
+    set_vga_palette(4,  0,  0,  63);  // blue
+    set_vga_palette(5,  63, 0,  63);  // magenta
+    set_vga_palette(6,  0,  63, 63);  // cyan
+    set_vga_palette(7,  42, 42, 42);  // gray
+    set_vga_palette(8,  21, 21, 21);  // dark gray
+    set_vga_palette(9,  63, 21, 21);  // light red
+    set_vga_palette(10, 21, 63, 21);  // light green
+    set_vga_palette(11, 63, 63, 21);  // light yellow
+    set_vga_palette(12, 21, 21, 63);  // light blue
+    set_vga_palette(13, 63, 21, 63);  // light magenta
+    set_vga_palette(14, 21, 63, 63);  // light cyan
+    set_vga_palette(15, 63, 63, 63);  // white
+}
+
+
 // Shapes as defined previously
 int shape_o[4][4][4] = {
     { {1,1,0,0}, {2,1,0,0}, {0,0,0,0}, {0,0,0,0} },
@@ -496,6 +523,7 @@ void kernel_loop() {
 void k_main() {
     k_clear_screen();
     disable_cursor();
+    set_custom_palette();
     k_printf("it works. welcome to tetros", 0);
     draw_grid();
     pic_remap();
