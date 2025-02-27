@@ -363,7 +363,6 @@ void k_main() {
     pic_remap();
     k_install_idt();
     init_timer();
-    init_keyboard();
     asm volatile ("sti");
     kernel_loop();
 }
