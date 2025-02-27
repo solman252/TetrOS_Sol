@@ -25,7 +25,6 @@ int grid_sel_x = 0;
 int grid_sel_y = 0;
 int current_shape = 0;
 int current_rot = 0;
-int square_mode = 0;
 int highlight_bg = 1; // 0 = normal, 1 = highlighted
 
 volatile unsigned int tick_count = 0;
@@ -42,6 +41,21 @@ void k_clear_screen() {
 unsigned int k_printf(char *message, unsigned int line) {
     char *vidmem = (char *)0xb8000;
     unsigned int i = line * 80 * 2;
+    while (*message) {
+        if (*message == '\n') {
+            line++;
+            i = line * 80 * 2;
+            message++;
+        } else {
+            vidmem[i++] = *message++;
+            vidmem[i++] = WHITE_TXT;
+        }
+    }
+    return 1;
+}
+unsigned int k_printf_at(char *message, unsigned int line, unsigned int pos) {
+    char *vidmem = (char *)0xb8000;
+    unsigned int i = (line * 80 * 2) + (2 * pos);
     while (*message) {
         if (*message == '\n') {
             line++;
@@ -278,13 +292,9 @@ void draw_grid() {
     int adjusted_points[4][2];
     i = 0;
     for (int index = 0; index < 4; index++) {
-        int *point = adjusted_points[index];
-        int x = point[0];
-        int y = point[1];
-        int new_point[2] = {x-center_x,y-center_y};
-	adjusted_points[i][0] = new_point[0];
-	adjusted_points[i][1] = new_point[1];
-	i++;
+        adjusted_points[i][0] = points[index][0]-center_x+grid_sel_x;
+        adjusted_points[i][1] = points[index][1]-center_y+grid_sel_y;
+        i++;
     }
 
     // draw grid rows with vertical borders using ║
@@ -304,13 +314,8 @@ void draw_grid() {
                 }
             }
             if (in_points) {
-                if (square_mode == 0) {
-                    line[pos++] = '[';
-                    line[pos++] = ']';
-                } else {
-                    line[pos++] = ' ';
-                    line[pos++] = 0xdc;
-                }
+                line[pos++] = '[';
+                line[pos++] = ']';
             } else {
                 line[pos++] = ' ';
                 line[pos++] = '.';
@@ -319,6 +324,15 @@ void draw_grid() {
         line[pos++] = 0xBA;  // ║
         line[pos] = '\0';
         k_printf(line, top_margin + 1 + r);
+        i=0;
+        for(int p = 0;p < 4;p++){
+            for(int eee = 0;eee < 2;eee++){
+                char buffer[16];
+                itoa(adjusted_points[p][eee], buffer, 10);
+                k_printf(buffer, 2+i);
+                i++;
+            }
+        }
     }
     
     // draw bottom border using ╚, ═, ╝
