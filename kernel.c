@@ -436,56 +436,6 @@ void draw_grid() {
     line[pos] = '\0';
     k_printf(line, top_margin + board_height - 1);
     
-    // for (int y = 0; y < grid_height; y++) {
-    //     for (int x = 0; x < grid_width; x++) {
-    //         int p = tilemap[y][x];
-    //         char col = GRAY;
-    //         char col_inner = WHITE;
-    //         switch(p) {
-    //             case 0: col = GRAY; col_inner = WHITE; break;
-    //             case 1: col = YELLOW; col_inner = LIGHT_YELLOW; break;
-    //             case 2: col = CYAN; col_inner = LIGHT_CYAN; break;
-    //             case 3: col = GREEN; col_inner = LIGHT_GREEN; break;
-    //             case 4: col = RED; col_inner = LIGHT_RED; break;
-    //             case 5: col = ORANGE; col_inner = LIGHT_ORANGE; break;
-    //             case 6: col = BLUE; col_inner = LIGHT_BLUE; break;
-    //             case 7: col = PURPLE; col_inner = LIGHT_PURPLE; break;
-    //         }
-    //         unsigned char attr;
-    //         if (highlight_bg && p != 0) {
-    //             attr = (col << 4) | col_inner;
-    //         } else {
-    //             attr = col;
-    //         }
-    //         int sel_line = top_margin + 1 + y;
-    //         int sel_col = left_margin + 1 + x * 2;
-    //         // update video memory for the two characters in the selected cell
-    //         char *vidmem = (char *)0xb8000;
-    //         unsigned int offset = (sel_line * 80 + sel_col) * 2 + 1;
-    //         vidmem[offset] = attr;
-    //         offset = (sel_line * 80 + sel_col + 1) * 2 + 1;
-    //         vidmem[offset] = attr;
-    //     }
-    // }
-
-    // choose the color based on current_shape using existing macros
-    // char col = GRAY;
-    // char col_inner = WHITE;
-    // switch(current_shape) {
-    //     case 0: col = YELLOW; col_inner = LIGHT_YELLOW; break; // shape_o
-    //     case 1: col = CYAN; col_inner = LIGHT_CYAN; break; // shape_i
-    //     case 2: col = GREEN; col_inner = LIGHT_GREEN; break; // shape_s
-    //     case 3: col = RED; col_inner = LIGHT_RED; break; // shape_z
-    //     case 4: col = ORANGE; col_inner = LIGHT_ORANGE; break; // shape_l
-    //     case 5: col = BLUE; col_inner = LIGHT_BLUE; break; // shape_j
-    //     case 6: col = PURPLE; col_inner = LIGHT_PURPLE; break; // shape_t
-    // }
-    // unsigned char attr;
-    // if (highlight_bg) {
-    //     attr = (col << 4) | col_inner;
-    // } else {
-    //     attr = col;
-    // }
     bool persis_should_stamp = should_stamp;
     if (should_stamp) {
         should_stamp = false;
@@ -497,14 +447,6 @@ void draw_grid() {
             if (persis_should_stamp) {
                 tilemap[y][x] = 1+current_shape;
             }
-            // int sel_line = top_margin + 1 + y;
-            // int sel_col = left_margin + 1 + x * 2;
-            // // update video memory for the two characters in the selected cell
-            // char *vidmem = (char *)0xb8000;
-            // unsigned int offset = (sel_line * 80 + sel_col) * 2 + 1;
-            // vidmem[offset] = attr;
-            // offset = (sel_line * 80 + sel_col + 1) * 2 + 1;
-            // vidmem[offset] = attr;
         };
     }
 }
