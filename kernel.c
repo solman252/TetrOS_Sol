@@ -365,8 +365,7 @@ void draw_grid() {
         case 6: col = PURPLE_TXT; break;
     }
     
-    // if highlight_bg is toggled, use the same color as defined for text but for the background,
-    // by shifting the color value into the background nibble and using WHITE_TXT as the foreground
+    // if highlight_bg toggled use same color as defined for text but for the background
     unsigned char attr;
     if(highlight_bg) {
         attr = (col << 4) | WHITE_TXT;
