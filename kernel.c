@@ -27,16 +27,17 @@ void set_custom_palette() {
     set_vga_palette(4,  0,  0,  63);  // BLUE
     set_vga_palette(5,  63, 32, 0);   // ORANGE
     set_vga_palette(7,  0,  50, 0);   // GREEN
-    set_vga_palette(20, 50, 50, 0);   // YELLOW               6 ISNT SET, USE 0x14 == 20
-    set_vga_palette(56, 63, 0,  63);  // PURPLE               8 ISNT SET, USE 0x38 == 56
-    set_vga_palette(57, 63, 0,  0);   // RED                  9 ISNT SET, USE 0x39 == 57
-    set_vga_palette(58, 50, 63, 63);  // LIGHT_CYAN           10 ISNT SET, USE 0x3A == 58
-    set_vga_palette(59, 63, 48, 32);  // LIGHT_ORANGE         11 ISNT SET, USE 0x3B == 59
-    set_vga_palette(60, 63, 63, 50);  // LIGHT_YELLOW         12 ISNT SET, USE 0x3C == 60
-    set_vga_palette(61, 50, 63, 50);  // LIGHT_GREEN          13 ISNT SET, USE 0x3D == 61
-    set_vga_palette(62, 63, 48, 63);  // LIGHT_PURPLE         14 ISNT SET, USE 0x3E == 62
-    set_vga_palette(63, 63, 32, 32);  // LIGHT_RED            15 ISNT SET, USE 0x3F == 63
+    set_vga_palette(20, 50, 50, 0);   // YELLOW (using index 20)
+    set_vga_palette(56, 63, 0,  63);  // PURPLE (using index 56)
+    set_vga_palette(57, 63, 0,  0);   // RED (using index 57)
+    set_vga_palette(58, 50, 63, 63);  // LIGHT_CYAN (using index 58)
+    set_vga_palette(59, 63, 48, 32);  // LIGHT_ORANGE (using index 59)
+    set_vga_palette(60, 63, 63, 50);  // LIGHT_YELLOW (using index 60)
+    set_vga_palette(61, 50, 63, 50);  // LIGHT_GREEN (using index 61)
+    set_vga_palette(62, 63, 48, 63);  // LIGHT_PURPLE (using index 62)
+    set_vga_palette(63, 63, 32, 32);  // LIGHT_RED (using index 63)
 }
+
 #define BLACK 0x00
 #define WHITE 0x01
 #define GRAY 0x02
@@ -48,7 +49,7 @@ void set_custom_palette() {
 #define PURPLE 0x08
 #define RED 0x09
 #define LIGHT_CYAN 0x0A
-#define LIGHT_BLUE 0x03 // lgiht blue = cyan
+#define LIGHT_BLUE 0x03  // light blue = cyan
 #define LIGHT_ORANGE 0x0B
 #define LIGHT_YELLOW 0x0C
 #define LIGHT_GREEN 0x0D
@@ -79,6 +80,7 @@ unsigned int k_printf(char *message, unsigned int line) {
     }
     return 1;
 }
+
 unsigned int k_printf_col(char *message, char *color, unsigned int line) {
     char *vidmem = (char *)0xb8000;
     unsigned int i = line * 80 * 2;
@@ -95,6 +97,7 @@ unsigned int k_printf_col(char *message, char *color, unsigned int line) {
     }
     return 1;
 }
+
 unsigned int k_printf_col_at(char *message, char *color, unsigned int line, unsigned int pos) {
     char *vidmem = (char *)0xb8000;
     unsigned int i = (line * 80 * 2) + (2 * pos);
@@ -111,6 +114,7 @@ unsigned int k_printf_col_at(char *message, char *color, unsigned int line, unsi
     }
     return 1;
 }
+
 unsigned int k_printf_at(char *message, unsigned int line, unsigned int pos) {
     char *vidmem = (char *)0xb8000;
     unsigned int i = (line * 80 * 2) + (2 * pos);
@@ -177,7 +181,7 @@ unsigned char inb(unsigned short port) {
     return ret;
 }
 
-void pic_remap() { //remap pics to avoid irq conflicts
+void pic_remap() { // remap pics to avoid irq conflicts
     unsigned char a1 = inb(0x21);
     unsigned char a2 = inb(0xA1);
     outb(0x20, 0x11);
@@ -272,17 +276,15 @@ int shape_t[4][4][4] = {
     { {1,0,0,0}, {2,1,0,0}, {1,0,0,0}, {0,0,0,0} }
 };
 
-
-
 int tilemap[20][10];
 
 //
-// draw_grid now centers the board and draws an outline around the grid
-// using double-line box drawing characters from code page 437:
-// ╔ = 0xC9 ═ = 0xCD ╗ = 0xBB, ║ = 0xBA, ╚ = 0xC8 and ╝ = 0xBC
+// draw_grid centers the board and draws an outline using double-line box drawing characters:
+// Top border: ╔ (0xC9), ═ (0xCD), ╗ (0xBB)
+// Side borders: ║ (0xBA)
+// Bottom border: ╚ (0xC8), ═ (0xCD), ╝ (0xBC)
 //
 void draw_grid() {
-    // shape_t[0][0][0] = 5;
     int board_width = grid_width * 2 + 2;
     int board_height = grid_height + 2;
     int left_margin = (80 - board_width) / 2;
@@ -292,60 +294,51 @@ void draw_grid() {
     char col_line[256];
     int pos, i;
     
-    // draw top border using ╔, ═, ╗
+    // Draw top border with explicit color (GRAY)
     pos = 0;
     for (i = 0; i < left_margin; i++) {
-        line[pos++] = ' ';
+        line[pos] = ' ';
+        col_line[pos] = GRAY;
+        pos++;
     }
-    line[pos++] = 0xC9;  // ╔
+    line[pos] = 0xC9;  // ╔
+    col_line[pos] = GRAY;
+    pos++;
     for (i = 0; i < board_width - 2; i++) {
-        line[pos++] = 0xCD;  // ═
+        line[pos] = 0xCD;  // ═
+        col_line[pos] = GRAY;
+        pos++;
     }
-    line[pos++] = 0xBB;  // ╗
+    line[pos] = 0xBB;  // ╗
+    col_line[pos] = GRAY;
+    pos++;
     line[pos] = '\0';
-    k_printf(line, top_margin);
+    col_line[pos] = '\0';
+    k_printf_col(line, col_line, top_margin);
     
-    // get shape
+    // Determine the current shape rotation for stamping
     int (*rot)[4];
     switch(current_shape) {
-        case 0:
-            rot = shape_o[current_rot];
-            break;
-        case 1:
-            rot = shape_i[current_rot];
-            break;
-        case 2:
-            rot = shape_s[current_rot];
-            break;
-        case 3:
-            rot = shape_z[current_rot];
-            break;
-        case 4:
-            rot = shape_l[current_rot];
-            break;
-        case 5:
-            rot = shape_j[current_rot];
-            break;
-        case 6:
-            rot = shape_t[current_rot];
-            break;
-        default:
-            rot = shape_o[current_rot];
-            break;
-    };
-    int center_x;
-    int center_y;
-    int points[4][2];
+        case 0: rot = shape_o[current_rot]; break;
+        case 1: rot = shape_i[current_rot]; break;
+        case 2: rot = shape_s[current_rot]; break;
+        case 3: rot = shape_z[current_rot]; break;
+        case 4: rot = shape_l[current_rot]; break;
+        case 5: rot = shape_j[current_rot]; break;
+        case 6: rot = shape_t[current_rot]; break;
+        default: rot = shape_o[current_rot]; break;
+    }
+    int center_x = 0, center_y = 0;
+    int points[4][2] = { {0,0}, {0,0}, {0,0}, {0,0} };
     i = 0;
     for (int y = 0; y < 4; y++) {
         int *row = rot[y];
         for (int x = 0; x < 4; x++) {
             int ch = row[x];
-            int point[2] = {x,y};
             if (ch == 1 || ch == 2) {
                 points[i][0] = x;
-		points[i][1] = y;
-		i++;
+                points[i][1] = y;
+                i++;
             }
             if (ch == 2) {
                 center_x = x;
@@ -354,100 +347,123 @@ void draw_grid() {
         }
     }
     int adjusted_points[4][2];
-    i = 0;
-    for (int index = 0; index <= 4; index++) {
-        adjusted_points[i][0] = points[index][0]-center_x+grid_sel_x;
-        adjusted_points[i][1] = points[index][1]-center_y+grid_sel_y;
-        i++;
+    for (i = 0; i < 4; i++) {
+        adjusted_points[i][0] = points[i][0] - center_x + grid_sel_x;
+        adjusted_points[i][1] = points[i][1] - center_y + grid_sel_y;
     }
-
-    // draw grid rows with vertical borders using ║
+    
+    // Draw grid rows with vertical borders
     for (int r = 0; r < grid_height; r++) {
         pos = 0;
+        // Left margin spaces with attribute GRAY
         for (i = 0; i < left_margin; i++) {
-            col_line[pos] = WHITE;
-            line[pos++] = ' ';
+            line[pos] = ' ';
+            col_line[pos] = GRAY;
+            pos++;
         }
-        line[pos++] = 0xBA;  // ║
+        // Left border (║)
+        line[pos] = 0xBA;
+        col_line[pos] = GRAY;
+        pos++;
         for (int c = 0; c < grid_width; c++) {
             bool in_points = false;
-            for(i=0;i<=4;i++) {
+            for (i = 0; i < 4; i++) {
                 if (c == adjusted_points[i][0] && r == adjusted_points[i][1]) {
                     in_points = true;
                     break;
                 }
             }
             if (in_points || tilemap[r][c] > 0) {
-                char col = GRAY;
-                char col_inner = WHITE;
+                char cell_color = GRAY;
+                char cell_inner = WHITE;
                 if (in_points) {
-                    switch(current_shape+1) {
-                        case 1: col = YELLOW; col_inner = LIGHT_YELLOW; break;
-                        case 2: col = CYAN; col_inner = LIGHT_CYAN; break;
-                        case 3: col = GREEN; col_inner = LIGHT_GREEN; break;
-                        case 4: col = RED; col_inner = LIGHT_RED; break;
-                        case 5: col = ORANGE; col_inner = LIGHT_ORANGE; break;
-                        case 6: col = BLUE; col_inner = LIGHT_BLUE; break;
-                        case 7: col = PURPLE; col_inner = LIGHT_PURPLE; break;
+                    switch(current_shape + 1) {
+                        case 1: cell_color = YELLOW; cell_inner = LIGHT_YELLOW; break;
+                        case 2: cell_color = CYAN; cell_inner = LIGHT_CYAN; break;
+                        case 3: cell_color = GREEN; cell_inner = LIGHT_GREEN; break;
+                        case 4: cell_color = RED; cell_inner = LIGHT_RED; break;
+                        case 5: cell_color = ORANGE; cell_inner = LIGHT_ORANGE; break;
+                        case 6: cell_color = BLUE; cell_inner = LIGHT_BLUE; break;
+                        case 7: cell_color = PURPLE; cell_inner = LIGHT_PURPLE; break;
                     }
                 } else {
                     switch(tilemap[r][c]) {
-                        case 1: col = YELLOW; col_inner = LIGHT_YELLOW; break;
-                        case 2: col = CYAN; col_inner = LIGHT_CYAN; break;
-                        case 3: col = GREEN; col_inner = LIGHT_GREEN; break;
-                        case 4: col = RED; col_inner = LIGHT_RED; break;
-                        case 5: col = ORANGE; col_inner = LIGHT_ORANGE; break;
-                        case 6: col = BLUE; col_inner = LIGHT_BLUE; break;
-                        case 7: col = PURPLE; col_inner = LIGHT_PURPLE; break;
+                        case 1: cell_color = YELLOW; cell_inner = LIGHT_YELLOW; break;
+                        case 2: cell_color = CYAN; cell_inner = LIGHT_CYAN; break;
+                        case 3: cell_color = GREEN; cell_inner = LIGHT_GREEN; break;
+                        case 4: cell_color = RED; cell_inner = LIGHT_RED; break;
+                        case 5: cell_color = ORANGE; cell_inner = LIGHT_ORANGE; break;
+                        case 6: cell_color = BLUE; cell_inner = LIGHT_BLUE; break;
+                        case 7: cell_color = PURPLE; cell_inner = LIGHT_PURPLE; break;
                     }
                 }
                 unsigned char attr;
                 if (highlight_bg && (tilemap[r][c] != 0 || in_points)) {
-                    attr = (col << 4) | col_inner;
+                    attr = (cell_color << 4) | cell_inner;
                 } else {
-                    attr = col;
+                    attr = cell_color;
                 }
+                // Draw the cell as "[ ]" with the proper attribute
+                line[pos] = '[';
                 col_line[pos] = attr;
-                line[pos++] = '[';
+                pos++;
+                line[pos] = ']';
                 col_line[pos] = attr;
-                line[pos++] = ']';
+                pos++;
             } else {
+                // Draw an empty cell using box-drawing characters (set with GRAY)
+                line[pos] = 0xC4;  // horizontal line piece
                 col_line[pos] = GRAY;
-                line[pos++] = 0xc4;
+                pos++;
+                line[pos] = 0xB4;  // vertical line piece
                 col_line[pos] = GRAY;
-                line[pos++] = 0xb4;
+                pos++;
             }
         }
-        line[pos++] = 0xBA;  // ║
+        // Right border (║)
+        line[pos] = 0xBA;
+        col_line[pos] = GRAY;
+        pos++;
         line[pos] = '\0';
+        col_line[pos] = '\0';
         k_printf_col(line, col_line, top_margin + 1 + r);
     }
     
-    // draw bottom border using ╚, ═, ╝
+    // Draw bottom border using ╚, ═, ╝
     pos = 0;
     for (i = 0; i < left_margin; i++) {
-        line[pos++] = ' ';
+        line[pos] = ' ';
+        col_line[pos] = GRAY;
+        pos++;
     }
-    line[pos++] = 0xC8;  // ╚
+    line[pos] = 0xC8;  // ╚
+    col_line[pos] = GRAY;
+    pos++;
     for (i = 0; i < board_width - 2; i++) {
-        line[pos++] = 0xCD;  // ═
+        line[pos] = 0xCD;  // ═
+        col_line[pos] = GRAY;
+        pos++;
     }
-    line[pos++] = 0xBC;  // ╝
+    line[pos] = 0xBC;  // ╝
+    col_line[pos] = GRAY;
+    pos++;
     line[pos] = '\0';
-    k_printf(line, top_margin + board_height - 1);
+    col_line[pos] = '\0';
+    k_printf_col(line, col_line, top_margin + board_height - 1);
     
+    // Stamp the piece if should_stamp is true (update tilemap)
     bool persis_should_stamp = should_stamp;
-    if (should_stamp) {
+    if (should_stamp)
         should_stamp = false;
-    }
-    for (int index = 0; index <= 4; index++) {
+    for (int index = 0; index < 4; index++) {
         int x = adjusted_points[index][0];
         int y = adjusted_points[index][1];
         if (x >= 0 && y >= 0 && x < grid_width && y < grid_height) {
             if (persis_should_stamp) {
-                tilemap[y][x] = 1+current_shape;
+                tilemap[y][x] = 1 + current_shape;
             }
-        };
+            // (The stamping color update is handled in the grid row drawing.)
+        }
     }
 }
 
