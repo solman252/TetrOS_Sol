@@ -7,8 +7,8 @@ const int grid_start_line = 5;
 int grid_sel_x = 0;
 int grid_sel_y = 0;
 int current_shape = 0;
-int square_mode = 1;
-int highlight_bg = 0; // 0 = normal, 1 = highlighted
+int square_mode = 0;
+int highlight_bg = 1; // 0 = normal, 1 = highlighted
 
 volatile unsigned int tick_count = 0;
 
@@ -431,7 +431,7 @@ void keyboard_handler() {
             if(current_shape >= 7)
                 current_shape = 0;
             break;
-        case 0x3D: // f3 key to toggle highlight/background color of the selection
+        case 0x3D: //f3 key to toggle highlight/background color of the selection
             highlight_bg = !highlight_bg;
             break;
         default:
