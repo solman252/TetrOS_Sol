@@ -35,6 +35,21 @@ unsigned int k_printf(char *message, unsigned int line) {
     }
     return 1;
 }
+unsigned int k_printf_col(char *message, unsigned int line, char col) {
+    char *vidmem = (char *)0xb8000;
+    unsigned int i = line * 80 * 2;
+    while (*message) {
+        if (*message == '\n') {
+            line++;
+            i = line * 80 * 2;
+            message++;
+        } else {
+            vidmem[i++] = *message++;
+            vidmem[i++] = col;
+        }
+    }
+    return 1;
+}
 
 unsigned int k_set_color_at(unsigned char attr, unsigned int line, unsigned int pos) {
     char *vidmem = (char *)0xb8000;
@@ -337,23 +352,23 @@ void draw_grid() {
                 buffer[pos++] = '[';
                 buffer[pos++] = ']';
             } else {
-                buffer[pos++] = ' ';
-                buffer[pos++] = '.';
+                buffer[pos++] = 0xc5;
+                buffer[pos++] = 0xc5;
             }
         }
         buffer[pos] = '\0';
-        k_printf(buffer, grid_start_line + y);
+        k_printf_col(buffer, grid_start_line + y,GRAY_TXT);
     }
     // choose the color based on the current shape
     char col = WHITE_TXT;
     switch(current_shape) {
-        case 0: col = YELLOW_TXT; break;
-        case 1: col = CYAN_TXT; break;
-        case 2: col = RED_TXT; break;
+        case 0: col = LIGHT_YELLOW_TXT; break;
+        case 1: col = LIGHT_CYAN_TXT; break;
+        case 2: col = LIGHT_RED_TXT; break;
         case 3: col = GREEN_TXT; break;
-        case 4: col = ORANGE_TXT; break;
-        case 5: col = PINK_TXT; break;
-        case 6: col = PURPLE_TXT; break;
+        case 4: col = BROWN_TXT; break;
+        case 5: col = LIGHT_MAGENTA_TXT; break;
+        case 6: col = MAGENTA_TXT; break;
     }
     
     // if highlight_bg toggled use same color as defined for text but for the background
