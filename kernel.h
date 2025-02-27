@@ -2,6 +2,7 @@
 #define KERNEL_H
 
 //vga text mode color attribute
+#define MAGENTA_TXT 0x05
 #define BLACK_TXT 0x00
 #define BLUE_TXT 0x01
 #define GREEN_TXT 0x02
