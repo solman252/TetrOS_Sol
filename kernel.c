@@ -264,6 +264,17 @@ int shape_t[4][4][4] = {
 
 int tilemap[20][10];
 
+void reset() {
+    fall_speed = 1.5;
+    tick_count = 0;
+    fall_tick_count = 0;
+    for (int y = 0; y < grid_height; y++) {
+        for (int x = 0; x < grid_width; x++) {
+            tilemap[y][x] = 0;
+        }
+    }
+}
+
 int current_shape_points[4][2];
 void get_current_shape_points() {
     int (*rot)[4];
@@ -452,17 +463,19 @@ void draw_grid() {
     print_cols(line, col_line, top_margin + board_height - 1);
     
     // Stamp the piece if should_stamp is true (update tilemap)
-    bool persis_should_stamp = should_stamp;
-    if (should_stamp)
+    if (should_stamp) {
         should_stamp = false;
-    for (int index = 0; index < 4; index++) {
-        int x = current_shape_points[index][0];
-        int y = current_shape_points[index][1];
-        if (x >= 0 && y >= 0 && x < grid_width && y < grid_height) {
-            if (persis_should_stamp) {
-                tilemap[y][x] = 1 + current_shape;
+        for (int index = 0; index < 4; index++) {
+            int x = current_shape_points[index][0];
+            int y = current_shape_points[index][1];
+            if (x >= 0 && y >= 0 && x < grid_width && y < grid_height) {
+                if (tilemap[y][x] != 0) {
+                    reset();
+                    break;
+                } else {
+                    tilemap[y][x] = 1 + current_shape;
+                }
             }
-            // (The stamping color update is handled in the grid row drawing.)
         }
     }
 }
@@ -491,13 +504,6 @@ void timer_handler() {
             grid_sel_x = 4;
             grid_sel_y = 0;
             current_rot = 0;
-            if(is_current_shape_illegal_placement()) {
-                for(int y = 0; y < grid_height; y++) {
-                    for(int x = 0; x < grid_width; x++) {
-                        tilemap[y][x] = 0;
-                    }
-                }
-            }
         }
     }
     draw_grid();
