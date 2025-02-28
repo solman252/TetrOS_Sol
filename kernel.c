@@ -22,7 +22,7 @@ void set_vga_palette(int color_index, int r, int g, int b) {
 void set_custom_palette() {
     set_vga_palette(0,  0,  0,  0);   // BLACK
     set_vga_palette(1,  63, 63, 63);  // WHITE
-    set_vga_palette(2,  32, 32, 32);  // GRAY
+    set_vga_palette(2,  26, 26, 26);  // GRAY
     set_vga_palette(3,  0,  55, 55);  // CYAN
     set_vga_palette(4,  0,  0,  63);  // BLUE
     set_vga_palette(5,  63, 32, 0);   // ORANGE
@@ -294,23 +294,22 @@ void draw_grid() {
     char col_line[256];
     int pos, i;
     
-    // Draw top border with explicit color (GRAY)
     pos = 0;
     for (i = 0; i < left_margin; i++) {
         line[pos] = ' ';
-        col_line[pos] = GRAY;
+        col_line[pos] = WHITE;
         pos++;
     }
     line[pos] = 0xC9;  // ╔
-    col_line[pos] = GRAY;
+    col_line[pos] = WHITE;
     pos++;
     for (i = 0; i < board_width - 2; i++) {
         line[pos] = 0xCD;  // ═
-        col_line[pos] = GRAY;
+        col_line[pos] = WHITE;
         pos++;
     }
     line[pos] = 0xBB;  // ╗
-    col_line[pos] = GRAY;
+    col_line[pos] = WHITE;
     pos++;
     line[pos] = '\0';
     col_line[pos] = '\0';
@@ -355,15 +354,15 @@ void draw_grid() {
     // Draw grid rows with vertical borders
     for (int r = 0; r < grid_height; r++) {
         pos = 0;
-        // Left margin spaces with attribute GRAY
+        // Left margin spaces with attribute WHITE
         for (i = 0; i < left_margin; i++) {
             line[pos] = ' ';
-            col_line[pos] = GRAY;
+            col_line[pos] = WHITE;
             pos++;
         }
         // Left border (║)
         line[pos] = 0xBA;
-        col_line[pos] = GRAY;
+        col_line[pos] = WHITE;
         pos++;
         for (int c = 0; c < grid_width; c++) {
             bool in_points = false;
@@ -374,7 +373,7 @@ void draw_grid() {
                 }
             }
             if (in_points || tilemap[r][c] > 0) {
-                char cell_color = GRAY;
+                char cell_color = WHITE;
                 char cell_inner = WHITE;
                 if (in_points) {
                     switch(current_shape + 1) {
@@ -411,7 +410,7 @@ void draw_grid() {
                 col_line[pos] = attr;
                 pos++;
             } else {
-                // Draw an empty cell using box-drawing characters (set with GRAY)
+                // Draw an empty cell using box-drawing characters (set with WHITE)
                 line[pos] = 0xC4;  // horizontal line piece
                 col_line[pos] = GRAY;
                 pos++;
@@ -422,7 +421,7 @@ void draw_grid() {
         }
         // Right border (║)
         line[pos] = 0xBA;
-        col_line[pos] = GRAY;
+        col_line[pos] = WHITE;
         pos++;
         line[pos] = '\0';
         col_line[pos] = '\0';
@@ -433,19 +432,19 @@ void draw_grid() {
     pos = 0;
     for (i = 0; i < left_margin; i++) {
         line[pos] = ' ';
-        col_line[pos] = GRAY;
+        col_line[pos] = WHITE;
         pos++;
     }
     line[pos] = 0xC8;  // ╚
-    col_line[pos] = GRAY;
+    col_line[pos] = WHITE;
     pos++;
     for (i = 0; i < board_width - 2; i++) {
         line[pos] = 0xCD;  // ═
-        col_line[pos] = GRAY;
+        col_line[pos] = WHITE;
         pos++;
     }
     line[pos] = 0xBC;  // ╝
-    col_line[pos] = GRAY;
+    col_line[pos] = WHITE;
     pos++;
     line[pos] = '\0';
     col_line[pos] = '\0';
