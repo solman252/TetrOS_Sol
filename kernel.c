@@ -65,7 +65,7 @@ void k_clear_screen() {
     }
 }
 
-unsigned int k_printf(char *message, unsigned int line) {
+unsigned int print(char *message, char color, unsigned int line) {
     char *vidmem = (char *)0xb8000;
     unsigned int i = line * 80 * 2;
     while (*message) {
@@ -75,13 +75,13 @@ unsigned int k_printf(char *message, unsigned int line) {
             message++;
         } else {
             vidmem[i++] = *message++;
-            vidmem[i++] = WHITE;
+            vidmem[i++] = color;
         }
     }
     return 1;
 }
 
-unsigned int k_printf_col(char *message, char *color, unsigned int line) {
+unsigned int print_cols(char *message, char *color, unsigned int line) {
     char *vidmem = (char *)0xb8000;
     unsigned int i = line * 80 * 2;
     while (*message || *color) {
@@ -95,46 +95,6 @@ unsigned int k_printf_col(char *message, char *color, unsigned int line) {
             vidmem[i++] = *color++;
         }
     }
-    return 1;
-}
-
-unsigned int k_printf_col_at(char *message, char *color, unsigned int line, unsigned int pos) {
-    char *vidmem = (char *)0xb8000;
-    unsigned int i = (line * 80 * 2) + (2 * pos);
-    while (*message || *color) {
-        if (*message == '\n') {
-            line++;
-            i = line * 80 * 2;
-            message++;
-            color++;
-        } else {
-            vidmem[i++] = *message++;
-            vidmem[i++] = *color++;
-        }
-    }
-    return 1;
-}
-
-unsigned int k_printf_at(char *message, unsigned int line, unsigned int pos) {
-    char *vidmem = (char *)0xb8000;
-    unsigned int i = (line * 80 * 2) + (2 * pos);
-    while (*message) {
-        if (*message == '\n') {
-            line++;
-            i = line * 80 * 2;
-            message++;
-        } else {
-            vidmem[i++] = *message++;
-            vidmem[i++] = WHITE;
-        }
-    }
-    return 1;
-}
-
-unsigned int k_set_color_at(unsigned char attr, unsigned int line, unsigned int pos) {
-    char *vidmem = (char *)0xb8000;
-    unsigned int i = 1 + (line * 80 * 2) + (2 * pos);
-    vidmem[i] = attr;
     return 1;
 }
 
@@ -313,7 +273,7 @@ void draw_grid() {
     pos++;
     line[pos] = '\0';
     col_line[pos] = '\0';
-    k_printf_col(line, col_line, top_margin);
+    print_cols(line, col_line, top_margin);
     
     // Determine the current shape rotation for stamping
     int (*rot)[4];
@@ -425,7 +385,7 @@ void draw_grid() {
         pos++;
         line[pos] = '\0';
         col_line[pos] = '\0';
-        k_printf_col(line, col_line, top_margin + 1 + r);
+        print_cols(line, col_line, top_margin + 1 + r);
     }
     
     // Draw bottom border using ╚, ═, ╝
@@ -448,7 +408,7 @@ void draw_grid() {
     pos++;
     line[pos] = '\0';
     col_line[pos] = '\0';
-    k_printf_col(line, col_line, top_margin + board_height - 1);
+    print_cols(line, col_line, top_margin + board_height - 1);
     
     // Stamp the piece if should_stamp is true (update tilemap)
     bool persis_should_stamp = should_stamp;
@@ -477,7 +437,7 @@ void timer_handler() {
         while (buffer[i]) i++;
         buffer[i] = 's';
         buffer[i+1] = '\0';
-        k_printf(buffer, 1);
+        print(buffer, WHITE, 1);
     }
     outb(0x20, 0x20);
 }
@@ -518,6 +478,8 @@ void keyboard_handler() {
         case 0x3E: // f4 key to toggle highlight/background color
             highlight_bg = !highlight_bg;
             break;
+        case 0x1B: // esc key to exit
+            break;
         default:
             break;
     }
@@ -526,7 +488,7 @@ void keyboard_handler() {
 }
 
 void init_timer() {
-    k_printf("0s", 1);
+    print("0s", WHITE, 1);
 }
 
 void kernel_loop() {
@@ -540,7 +502,7 @@ void k_main() {
     set_custom_palette();
     k_clear_screen();
     disable_cursor();
-    k_printf("it works. welcome to tetros", 0);
+    print("Welcome to TetrOS!", WHITE, 0);
     draw_grid();
     pic_remap();
     k_install_idt();
