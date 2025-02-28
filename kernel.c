@@ -3,7 +3,7 @@
 const int grid_width = 10;
 const int grid_height = 20;
 
-int grid_sel_x = 0;
+int grid_sel_x = 4;
 int grid_sel_y = 0;
 int current_shape = 0;
 int current_rot = 0;
@@ -102,6 +102,26 @@ unsigned int print_cols(char *message, char *color, unsigned int line) {
 
 unsigned int round(float num) {
     return (int)(num * 10 + 0.5) / 10.;
+}
+unsigned int rand(unsigned int start_range,unsigned int end_range)
+{
+    static unsigned int rand = 0xACE1U; /* Any nonzero start state will work. */
+
+    /*check for valid range.*/
+    if(start_range == end_range) {
+        return start_range;
+    }
+
+    /*get the random in end-range.*/
+    rand += 0x3AD;
+    rand %= end_range;
+
+    /*get the random in start-range.*/
+    while(rand < start_range){
+        rand = rand + end_range - start_range;
+    }
+
+    return rand;
 }
 
 void disable_cursor() {
@@ -244,6 +264,55 @@ int shape_t[4][4][4] = {
 
 int tilemap[20][10];
 
+int current_shape_points[4][2];
+void get_current_shape_points() {
+    int (*rot)[4];
+    switch(current_shape) {
+        case 0: rot = shape_o[current_rot]; break;
+        case 1: rot = shape_i[current_rot]; break;
+        case 2: rot = shape_s[current_rot]; break;
+        case 3: rot = shape_z[current_rot]; break;
+        case 4: rot = shape_l[current_rot]; break;
+        case 5: rot = shape_j[current_rot]; break;
+        case 6: rot = shape_t[current_rot]; break;
+        default: rot = shape_o[current_rot]; break;
+    }
+    int center_x = 0, center_y = 0;
+    int points[4][2] = { {0,0}, {0,0}, {0,0}, {0,0} };
+    int i = 0;
+    for (int y = 0; y < 4; y++) {
+        int *row = rot[y];
+        for (int x = 0; x < 4; x++) {
+            int ch = row[x];
+            if (ch == 1 || ch == 2) {
+                points[i][0] = x;
+                points[i][1] = y;
+                i++;
+            }
+            if (ch == 2) {
+                center_x = x;
+                center_y = y;
+            }
+        }
+    }
+    for (i = 0; i < 4; i++) {
+        current_shape_points[i][0] = points[i][0] - center_x + grid_sel_x;
+        current_shape_points[i][1] = points[i][1] - center_y + grid_sel_y;
+    }
+}
+
+bool is_current_shape_illegal_placement() {
+    get_current_shape_points();
+    for (int i = 0; i < 4; i++) {
+        int x = current_shape_points[i][0];
+        int y = current_shape_points[i][1];
+        if (!(x >= 0 && x < grid_width && y < grid_height && tilemap[y][x] == 0)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 //
 // draw_grid centers the board and draws an outline using double-line box drawing characters:
 // Top border: ╔ (0xC9), ═ (0xCD), ╗ (0xBB)
@@ -281,41 +350,7 @@ void draw_grid() {
     col_line[pos] = '\0';
     print_cols(line, col_line, top_margin);
     
-    // Determine the current shape rotation for stamping
-    int (*rot)[4];
-    switch(current_shape) {
-        case 0: rot = shape_o[current_rot]; break;
-        case 1: rot = shape_i[current_rot]; break;
-        case 2: rot = shape_s[current_rot]; break;
-        case 3: rot = shape_z[current_rot]; break;
-        case 4: rot = shape_l[current_rot]; break;
-        case 5: rot = shape_j[current_rot]; break;
-        case 6: rot = shape_t[current_rot]; break;
-        default: rot = shape_o[current_rot]; break;
-    }
-    int center_x = 0, center_y = 0;
-    int points[4][2] = { {0,0}, {0,0}, {0,0}, {0,0} };
-    i = 0;
-    for (int y = 0; y < 4; y++) {
-        int *row = rot[y];
-        for (int x = 0; x < 4; x++) {
-            int ch = row[x];
-            if (ch == 1 || ch == 2) {
-                points[i][0] = x;
-                points[i][1] = y;
-                i++;
-            }
-            if (ch == 2) {
-                center_x = x;
-                center_y = y;
-            }
-        }
-    }
-    int adjusted_points[4][2];
-    for (i = 0; i < 4; i++) {
-        adjusted_points[i][0] = points[i][0] - center_x + grid_sel_x;
-        adjusted_points[i][1] = points[i][1] - center_y + grid_sel_y;
-    }
+    get_current_shape_points();
     
     // Draw grid rows with vertical borders
     for (int r = 0; r < grid_height; r++) {
@@ -333,7 +368,7 @@ void draw_grid() {
         for (int c = 0; c < grid_width; c++) {
             bool in_points = false;
             for (i = 0; i < 4; i++) {
-                if (c == adjusted_points[i][0] && r == adjusted_points[i][1]) {
+                if (c == current_shape_points[i][0] && r == current_shape_points[i][1]) {
                     in_points = true;
                     break;
                 }
@@ -421,8 +456,8 @@ void draw_grid() {
     if (should_stamp)
         should_stamp = false;
     for (int index = 0; index < 4; index++) {
-        int x = adjusted_points[index][0];
-        int y = adjusted_points[index][1];
+        int x = current_shape_points[index][0];
+        int y = current_shape_points[index][1];
         if (x >= 0 && y >= 0 && x < grid_width && y < grid_height) {
             if (persis_should_stamp) {
                 tilemap[y][x] = 1 + current_shape;
@@ -447,9 +482,16 @@ void timer_handler() {
         print(buffer, WHITE, 1);
     }
     if (fall_tick_count % round(18/fall_speed) == 0) {
-        if (grid_sel_y < grid_height - 1)
-            grid_sel_y++;
+        grid_sel_y++;
+        if(is_current_shape_illegal_placement()) {
+            grid_sel_y--;
+            should_stamp = true;
             draw_grid();
+            current_shape = rand(0,6);
+            grid_sel_x = 4;
+            grid_sel_y = 0;
+            current_rot = 0;
+        }
     }
     outb(0x20, 0x20);
 }
@@ -458,33 +500,51 @@ void keyboard_handler() {
     unsigned char scancode = inb(0x60);
     switch(scancode) {
         case 0x4B: // left key
-            if (grid_sel_x > 0)
-                grid_sel_x--;
+            grid_sel_x--;
+            if (is_current_shape_illegal_placement()) {
+                grid_sel_x++;
+            }
             break;
         case 0x4D: // right key
-            if (grid_sel_x < grid_width - 1)
-                grid_sel_x++;
+            grid_sel_x++;
+            if (is_current_shape_illegal_placement()) {
+                grid_sel_x--;
+            }
             break;
         case 0x48: // down key (moves grid up)
-            if (grid_sel_y > 0)
-                grid_sel_y--;
+            grid_sel_y--;
+            if (is_current_shape_illegal_placement()) {
+                grid_sel_y++;
+            } else {
                 fall_tick_count = 0;
+            }
             break;
         case 0x50: // up key (moves grid down)
-            if (grid_sel_y < grid_height - 1)
-                grid_sel_y++;
+            grid_sel_y++;
+            if (is_current_shape_illegal_placement()) {
+                grid_sel_y--;
+            } else {
                 fall_tick_count = 0;
+            }
             break;
         case 0x3B: // f1 key to change current shape
             current_rot = 0;
             current_shape++;
-            if (current_shape >= 7)
+            if (current_shape >= 7) {
                 current_shape = 0;
+            }
             break;
         case 0x3C: // f2 key to change shape rotation
             current_rot++;
-            if (current_rot >= 4)
+            if (current_rot >= 4) {
                 current_rot = 0;
+            }
+            if (is_current_shape_illegal_placement()) {
+                current_rot--;
+                if (current_rot < 0) {
+                    current_rot = 3;
+                }
+            }
             break;
         case 0x3D: // f3 key to stamp
             should_stamp = true;
