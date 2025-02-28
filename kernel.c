@@ -491,8 +491,16 @@ void timer_handler() {
             grid_sel_x = 4;
             grid_sel_y = 0;
             current_rot = 0;
+            if(is_current_shape_illegal_placement()) {
+                for(int y = 0; y < grid_height; y++) {
+                    for(int x = 0; x < grid_width; x++) {
+                        tilemap[y][x] = 0;
+                    }
+                }
+            }
         }
     }
+    draw_grid();
     outb(0x20, 0x20);
 }
 
