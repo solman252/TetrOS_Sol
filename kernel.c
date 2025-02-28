@@ -7,10 +7,12 @@ int grid_sel_x = 0;
 int grid_sel_y = 0;
 int current_shape = 0;
 int current_rot = 0;
+float fall_speed = 1.5; // speed in tiles per second
 bool highlight_bg = true;
 bool should_stamp = false;
 
 volatile unsigned int tick_count = 0;
+volatile unsigned int fall_tick_count = 0;
 
 void set_vga_palette(int color_index, int r, int g, int b) {
     outb(0x3C8, color_index); // Select the color index to modify
@@ -56,7 +58,7 @@ void set_custom_palette() {
 #define LIGHT_PURPLE 0x0E
 #define LIGHT_RED 0x0F
 
-void k_clear_screen() {
+void clear_screen() {
     char *vidmem = (char *)0xb8000;
     unsigned int i = 0;
     while (i < (80 * 25 * 2)) {
@@ -96,6 +98,10 @@ unsigned int print_cols(char *message, char *color, unsigned int line) {
         }
     }
     return 1;
+}
+
+unsigned int round(float num) {
+    return (int)(num * 10 + 0.5) / 10.;
 }
 
 void disable_cursor() {
@@ -428,6 +434,7 @@ void draw_grid() {
 
 void timer_handler() {
     tick_count++;
+    fall_tick_count++;
     if (tick_count % 18 == 0) {
         static unsigned int seconds = 0;
         seconds++;
@@ -438,6 +445,11 @@ void timer_handler() {
         buffer[i] = 's';
         buffer[i+1] = '\0';
         print(buffer, WHITE, 1);
+    }
+    if (fall_tick_count % round(18/fall_speed) == 0) {
+        if (grid_sel_y < grid_height - 1)
+            grid_sel_y++;
+            draw_grid();
     }
     outb(0x20, 0x20);
 }
@@ -456,10 +468,12 @@ void keyboard_handler() {
         case 0x48: // down key (moves grid up)
             if (grid_sel_y > 0)
                 grid_sel_y--;
+                fall_tick_count = 0;
             break;
         case 0x50: // up key (moves grid down)
             if (grid_sel_y < grid_height - 1)
                 grid_sel_y++;
+                fall_tick_count = 0;
             break;
         case 0x3B: // f1 key to change current shape
             current_rot = 0;
@@ -500,7 +514,7 @@ void kernel_loop() {
 void k_main() {
     outb(0x3C6, 0xFF);
     set_custom_palette();
-    k_clear_screen();
+    clear_screen();
     disable_cursor();
     print("Welcome to TetrOS!", WHITE, 0);
     draw_grid();
