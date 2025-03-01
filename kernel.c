@@ -3,21 +3,102 @@
 const int grid_width = 10;
 const int grid_height = 20;
 
-int grid_sel_x = 4;
-int grid_sel_y = 0;
-int current_shape = 0;
-int next_shape = 0;
-int held_shape = -1;
-bool held_this_turn = false;
-int current_rot = 0;
-float fall_speed = 1.5; // speed in tiles per second
+int grid_sel_x,grid_sel_y,current_shape,next_shape,held_shape,score,lines_cleared,lvl,current_rot;
+float fall_speed;
+bool held_this_turn;
+bool should_stamp = false;
 bool highlight_bg = true;
 bool show_timer = true;
-bool should_stamp = false;
 
 volatile unsigned int tick_count = 0;
 volatile unsigned int fall_tick_count = 0;
 volatile unsigned int pause_tick_count = 0;
+
+void outb(unsigned short port, unsigned char data) {
+    asm volatile ("outb %0, %1" : : "a"(data), "Nd"(port));
+}
+unsigned char inb(unsigned short port) {
+    unsigned char ret;
+    asm volatile ("inb %1, %0" : "=a"(ret) : "Nd"(port));
+    return ret;
+}
+void pic_remap() { // remap pics to avoid irq conflicts
+    unsigned char a1 = inb(0x21);
+    unsigned char a2 = inb(0xA1);
+    outb(0x20, 0x11);
+    outb(0xA0, 0x11);
+    outb(0x21, 0x20);
+    outb(0xA1, 0x28);
+    outb(0x21, 0x04);
+    outb(0xA1, 0x02);
+    outb(0x21, 0x01);
+    outb(0xA1, 0x01);
+    outb(0x21, a1);
+    outb(0xA1, a2);
+}
+struct idt_entry {
+    unsigned short base_low;
+    unsigned short sel;
+    unsigned char always0;
+    unsigned char flags;
+    unsigned short base_high;
+} __attribute__((packed));
+struct idt_ptr {
+    unsigned short limit;
+    unsigned int base;
+} __attribute__((packed));
+struct idt_entry idt[256];
+struct idt_ptr idtp;
+void idt_set_gate(unsigned char num, unsigned int base, unsigned short sel, unsigned char flags) {
+    idt[num].base_low  = base & 0xFFFF;
+    idt[num].base_high = (base >> 16) & 0xFFFF;
+    idt[num].sel       = sel;
+    idt[num].always0   = 0;
+    idt[num].flags     = flags;
+}
+extern void idt_load(unsigned int);
+void k_install_idt() {
+    idtp.limit = sizeof(struct idt_entry) * 256 - 1;
+    idtp.base  = (unsigned int)&idt;
+    extern void timer_handler_stub();
+    extern void keyboard_handler_stub();
+    idt_set_gate(32, (unsigned int)timer_handler_stub, 0x08, 0x8E);
+    idt_set_gate(33, (unsigned int)keyboard_handler_stub, 0x08, 0x8E);
+    idt_load((unsigned int)&idtp);
+}
+void itoa(int value, char *str, int base) {
+    char *rc = str, *ptr = str, *low;
+    if (base < 2 || base > 36) {
+        *str = '\0';
+        return;
+    }
+    if (value < 0 && base == 10) {
+        *ptr++ = '-';
+        value = -value;
+    }
+    int num = value;
+    do {
+        *ptr++ = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"[num % base];
+        num /= base;
+    } while (num);
+    *ptr = '\0';
+    low = rc;
+    if (*rc == '-') {
+        low++;
+    }
+    char *high = ptr - 1;
+    while (low < high) {
+        char temp = *low;
+        *low++ = *high;
+        *high-- = temp;
+    }
+}
+
+void kernel_loop() {
+    while (1) {
+        asm volatile ("hlt");
+    }
+}
 
 void set_vga_palette(int color_index, int r, int g, int b) {
     outb(0x3C8, color_index); // Select the color index to modify
@@ -25,7 +106,6 @@ void set_vga_palette(int color_index, int r, int g, int b) {
     outb(0x3C9, g & 0x3F);    // Set green component (0-63)
     outb(0x3C9, b & 0x3F);    // Set blue component (0-63)
 }
-
 void set_custom_palette() {
     set_vga_palette(0,  0,  0,  0);   // BLACK
     set_vga_palette(1,  63, 63, 63);  // WHITE
@@ -45,24 +125,6 @@ void set_custom_palette() {
     set_vga_palette(63, 63, 32, 32);  // LIGHT_RED (using index 63)
 }
 
-#define BLACK 0x00
-#define WHITE 0x01
-#define GRAY 0x02
-#define CYAN 0x03
-#define BLUE 0x04
-#define ORANGE 0x05
-#define YELLOW 0x06
-#define GREEN 0x07
-#define PURPLE 0x08
-#define RED 0x09
-#define LIGHT_CYAN 0x0A
-#define LIGHT_BLUE 0x03  // light blue = cyan
-#define LIGHT_ORANGE 0x0B
-#define LIGHT_YELLOW 0x0C
-#define LIGHT_GREEN 0x0D
-#define LIGHT_PURPLE 0x0E
-#define LIGHT_RED 0x0F
-
 void clear_screen() {
     char *vidmem = (char *)0xb8000;
     unsigned int i = 0;
@@ -71,7 +133,10 @@ void clear_screen() {
         vidmem[i++] = WHITE;
     }
 }
-
+void disable_cursor() {
+    outb(0x3D4, 0x0A);
+    outb(0x3D5, 0x20);
+}
 unsigned int print(char *message, char color, unsigned int line) {
     char *vidmem = (char *)0xb8000;
     unsigned int i = line * 80 * 2;
@@ -102,7 +167,6 @@ unsigned int print_at(char *message, char color, unsigned int line, unsigned int
     }
     return 1;
 }
-
 unsigned int print_cols(char *message, char *color, unsigned int line) {
     char *vidmem = (char *)0xb8000;
     unsigned int i = line * 80 * 2;
@@ -136,6 +200,7 @@ unsigned int print_cols_at(char *message, char *color, unsigned int line, unsign
     return 1;
 }
 
+
 unsigned int round(float num) {
     return (int)(num * 10 + 0.5) / 10.;
 }
@@ -158,100 +223,6 @@ unsigned int rand(unsigned int start_range,unsigned int end_range)
     }
 
     return rand;
-}
-
-void disable_cursor() {
-    outb(0x3D4, 0x0A);
-    outb(0x3D5, 0x20);
-}
-
-void itoa(int value, char *str, int base) {
-    char *rc = str, *ptr = str, *low;
-    if (base < 2 || base > 36) {
-        *str = '\0';
-        return;
-    }
-    if (value < 0 && base == 10) {
-        *ptr++ = '-';
-        value = -value;
-    }
-    int num = value;
-    do {
-        *ptr++ = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"[num % base];
-        num /= base;
-    } while (num);
-    *ptr = '\0';
-    low = rc;
-    if (*rc == '-') {
-        low++;
-    }
-    char *high = ptr - 1;
-    while (low < high) {
-        char temp = *low;
-        *low++ = *high;
-        *high-- = temp;
-    }
-}
-
-void outb(unsigned short port, unsigned char data) {
-    asm volatile ("outb %0, %1" : : "a"(data), "Nd"(port));
-}
-
-unsigned char inb(unsigned short port) {
-    unsigned char ret;
-    asm volatile ("inb %1, %0" : "=a"(ret) : "Nd"(port));
-    return ret;
-}
-
-void pic_remap() { // remap pics to avoid irq conflicts
-    unsigned char a1 = inb(0x21);
-    unsigned char a2 = inb(0xA1);
-    outb(0x20, 0x11);
-    outb(0xA0, 0x11);
-    outb(0x21, 0x20);
-    outb(0xA1, 0x28);
-    outb(0x21, 0x04);
-    outb(0xA1, 0x02);
-    outb(0x21, 0x01);
-    outb(0xA1, 0x01);
-    outb(0x21, a1);
-    outb(0xA1, a2);
-}
-
-struct idt_entry {
-    unsigned short base_low;
-    unsigned short sel;
-    unsigned char always0;
-    unsigned char flags;
-    unsigned short base_high;
-} __attribute__((packed));
-
-struct idt_ptr {
-    unsigned short limit;
-    unsigned int base;
-} __attribute__((packed));
-
-struct idt_entry idt[256];
-struct idt_ptr idtp;
-
-void idt_set_gate(unsigned char num, unsigned int base, unsigned short sel, unsigned char flags) {
-    idt[num].base_low  = base & 0xFFFF;
-    idt[num].base_high = (base >> 16) & 0xFFFF;
-    idt[num].sel       = sel;
-    idt[num].always0   = 0;
-    idt[num].flags     = flags;
-}
-
-extern void idt_load(unsigned int);
-
-void k_install_idt() {
-    idtp.limit = sizeof(struct idt_entry) * 256 - 1;
-    idtp.base  = (unsigned int)&idt;
-    extern void timer_handler_stub();
-    extern void keyboard_handler_stub();
-    idt_set_gate(32, (unsigned int)timer_handler_stub, 0x08, 0x8E);
-    idt_set_gate(33, (unsigned int)keyboard_handler_stub, 0x08, 0x8E);
-    idt_load((unsigned int)&idtp);
 }
 
 // Shapes as defined previously
@@ -307,23 +278,31 @@ int tilemap[20][10];
 bool full_lines[20];
 
 void reset() {
+    score = 0;
+    lines_cleared = 0;
+    lvl = 0;
     fall_speed = 1.5;
+
+    current_shape = 0;
+    next_shape = 0;
+    held_shape = -1;
+    held_this_turn = false;
+    grid_sel_x = 4;
+    grid_sel_y = 0;
+    current_rot = 0;
+
     tick_count = 0;
     fall_tick_count = 0;
+
     for (int y = 0; y < grid_height; y++) {
         for (int x = 0; x < grid_width; x++) {
             tilemap[y][x] = 0;
         }
     }
-    print("         ", WHITE, 1);
-    int seconds = round(tick_count / 18);
-    char buffer[16];
-    itoa(seconds, buffer, 10);
-    int i = 0;
-    while (buffer[i]) i++;
-    buffer[i] = 's';
-    buffer[i+1] = '\0';
-    print(buffer, WHITE, 1);
+    clear_screen();
+    print("Welcome to TetrOS!", WHITE, 0);
+    init_timer();
+    draw_grid();
 }
 
 int shape_points[4][2];
@@ -718,6 +697,9 @@ void draw_grid() {
     }
 }
 
+void init_timer() {
+    print("0s", WHITE, 1);
+}
 void timer_handler() {
     tick_count++;
     fall_tick_count++;
@@ -910,22 +892,11 @@ void keyboard_handler() {
     outb(0x20, 0x20);
 }
 
-void init_timer() {
-    print("0s", WHITE, 1);
-}
-
-void kernel_loop() {
-    while (1) {
-        asm volatile ("hlt");
-    }
-}
-
 void k_main() {
     outb(0x3C6, 0xFF);
     set_custom_palette();
-    clear_screen();
     disable_cursor();
-    print("Welcome to TetrOS!", WHITE, 0);
+    reset();
     draw_grid();
     pic_remap();
     k_install_idt();
