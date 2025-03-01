@@ -9,6 +9,7 @@ bool held_this_turn;
 bool should_stamp = false;
 bool highlight_bg = true;
 bool show_timer = true;
+bool show_keycodes = false;
 
 volatile unsigned int tick_count = 0;
 volatile unsigned int fall_tick_count = 0;
@@ -375,10 +376,11 @@ bool is_current_shape_illegal_placement() {
 //
 void draw_grid() {
     int left_margin = (80 - (grid_width * 2 + 2)) / 2;
-    int top_margin = (27 - (grid_height + 2)) / 2;
+    int top_margin = 1+(27 - (grid_height + 2)) / 2;
     
     char line[256];
     char col_line[256];
+    char buffer[16];
     int pos, i;
     
     pos = 0;
@@ -397,6 +399,21 @@ void draw_grid() {
     col_line[pos] = '\0';
     print_cols_at(line, col_line, top_margin, left_margin);
     
+    // Draw Level
+    itoa(lvl, buffer, 10);
+    print_at("LEVEL:", WHITE, 0, left_margin);
+    print_at(buffer, WHITE, 0, left_margin+7);
+    
+    // Draw Lines cleared
+    itoa(lines_cleared, buffer, 10);
+    print_at("LINES:", WHITE, 1, left_margin);
+    print_at(buffer, WHITE, 1, left_margin+7);
+
+    // Draw Score
+    itoa(score, buffer, 10);
+    print_at("SCORE:", WHITE, 2, left_margin);
+    print_at(buffer, WHITE, 2, left_margin+7);
+
     // Draw Next Shape Box
     pos = 0;
     line[pos++] = 0xC9;  // ╔
@@ -679,6 +696,7 @@ void draw_grid() {
             }
         }
         if(!did_reset) {
+            int cleared_count = 0;
             for (int y = 0; y < grid_height; y++) {
                 bool line_full = true;
                 for (int x = 0; x < grid_width; x++) {
@@ -690,9 +708,23 @@ void draw_grid() {
                 if(line_full) {
                     pause_tick_count = 6;
                     full_lines[y] = true;
+                    cleared_count++;
                 }
                 full_lines[y] = line_full;
             }
+            lines_cleared += cleared_count;
+            lvl = round(lines_cleared / 10);
+            if (lvl < 9) {
+                fall_speed += 5/48;
+            } else if (lvl == 9) {
+                fall_speed += 1/24;
+            } else if (lvl == 10 || lvl == 13 || lvl == 16 || lvl == 19 || lvl == 29) {
+                fall_speed += 1/48;
+            }
+            score += round(cleared_count / 4)*(1200*(lvl+1)); // tetrises
+            score += round((cleared_count % 4) / 3)*(300*(lvl+1)); // triples
+            score += round(((cleared_count % 4) % 3) / 2)*(100*(lvl+1)); // doubles
+            score += (((cleared_count % 4) % 3) % 2)*(40*(lvl+1)); // singles
         }
     }
 }
@@ -722,6 +754,7 @@ void timer_handler() {
                 draw_grid();
                 current_shape = next_shape;
                 next_shape = get_from_bag();
+                fall_tick_count = 0;
                 grid_sel_x = 4;
                 grid_sel_y = 0;
                 current_rot = 0;
@@ -778,17 +811,21 @@ void keyboard_handler() {
                 break;
             case 0x50: // down arrow (soft drop)
                 grid_sel_y++;
+                score++;
                 if (is_current_shape_illegal_placement()) {
                     grid_sel_y--;
+                    score--;
                 } else {
                     fall_tick_count = 0;
                 }
                 break;
             case 0x39: // space (hard drop)
+                int temp = grid_sel_y;
                 while(!is_current_shape_illegal_placement()) {
                     grid_sel_y++;
                 }
                 grid_sel_y--;
+                score += 2*(grid_sel_y - temp);
                 fall_tick_count = 0;
                 should_stamp = true;
                 draw_grid();
@@ -829,15 +866,20 @@ void keyboard_handler() {
                         held_shape = current_shape;
                         current_shape = next_shape;
                         next_shape = get_from_bag();
+                        fall_tick_count = 0;
                     } else {
                         int temp = current_shape;
                         current_shape = held_shape;
                         held_shape = temp;
+                        fall_tick_count = 0;
                     }
                     grid_sel_x = 4;
                     grid_sel_y = 0;
                     current_rot = 0;
                 }
+                break;
+            case 0x13: // r (reset)
+                reset();
                 break;
             case 0x3B: // f1 (toggle highlights)
                 highlight_bg = !highlight_bg;
@@ -857,38 +899,22 @@ void keyboard_handler() {
                     print("         ", WHITE, 1);
                 }
                 break;
+            case 0x3D: // f3 (toggle keycode viewer)
+                show_keycodes = !show_keycodes;
+                if (!show_keycodes)
+                print("             ", WHITE, 2);
+                break;
             default:
                 break;
-            // case 0x3B: // f1 key to change current shape
-            //     current_rot = 0;
-            //     current_shape++;
-            //     if (current_shape >= 7) {
-            //         current_shape = 0;
-            //     }
-            //     break;
-            // case 0x3C: // f2 key to change shape rotation
-            //     current_rot++;
-            //     if (current_rot >= 4) {
-            //         current_rot = 0;
-            //     }
-            //     if (is_current_shape_illegal_placement()) {
-            //         current_rot--;
-            //         if (current_rot < 0) {
-            //             current_rot = 3;
-            //         }
-            //     }
-            //     break;
-            // case 0x3D: // f3 key to stamp
-            //     should_stamp = true;
-            //     break;
+        }
+        if (show_keycodes) {
+            print("KEYCODE:     ", WHITE, 2);
+            char buffer[16];
+            itoa(scancode, buffer, 10);
+            print_at(buffer, WHITE, 2, 9);
         }
     }
     draw_grid();
-    // Keycode detector, uncomment to see
-    // char buffer[16];
-    // itoa(scancode, buffer, 10);
-    // print("                  ", WHITE, 0);
-    // print(buffer, WHITE, 0);
     outb(0x20, 0x20);
 }
 
