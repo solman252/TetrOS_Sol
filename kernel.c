@@ -11,6 +11,7 @@ bool held_this_turn = false;
 int current_rot = 0;
 float fall_speed = 1.5; // speed in tiles per second
 bool highlight_bg = true;
+bool show_timer = true;
 bool should_stamp = false;
 
 volatile unsigned int tick_count = 0;
@@ -511,9 +512,8 @@ void draw_grid() {
 void timer_handler() {
     tick_count++;
     fall_tick_count++;
-    if (tick_count % 18 == 0) {
-        static unsigned int seconds = 0;
-        seconds++;
+    if (tick_count % 18 == 0 && show_timer) {
+        int seconds = round(tick_count / 18);
         char buffer[16];
         itoa(seconds, buffer, 10);
         int i = 0;
@@ -592,6 +592,19 @@ void keyboard_handler() {
                     fall_tick_count = 0;
                 }
                 break;
+            case 0x39: // space (hard drop)
+                while(!is_current_shape_illegal_placement()) {
+                    grid_sel_y++;
+                }
+                grid_sel_y--;
+                fall_tick_count = 0;
+                should_stamp = true;
+                draw_grid();
+                current_shape = get_from_bag();
+                grid_sel_x = 4;
+                grid_sel_y = 0;
+                current_rot = 0;
+                break;
             case 0x48: // up arrow (rotate right)
                 current_rot++;
                 if (current_rot >= 4) {
@@ -635,6 +648,21 @@ void keyboard_handler() {
             case 0x3B: // f1 (toggle highlights)
                 highlight_bg = !highlight_bg;
                 break;
+            case 0x3C: // f2 (toggle timer)
+                show_timer = !show_timer;
+                if (show_timer) {
+                    int seconds = round(tick_count / 18);
+                    char buffer[16];
+                    itoa(seconds, buffer, 10);
+                    int i = 0;
+                    while (buffer[i]) i++;
+                    buffer[i] = 's';
+                    buffer[i+1] = '\0';
+                    print(buffer, WHITE, 1);
+                } else {
+                    print("         ", WHITE, 1);
+                }
+                break;
             default:
                 break;
             // case 0x3B: // f1 key to change current shape
@@ -662,6 +690,11 @@ void keyboard_handler() {
         }
     }
     draw_grid();
+    // Keycode detector, uncomment to see
+    // char buffer[16];
+    // itoa(scancode, buffer, 10);
+    // print("                  ", WHITE, 0);
+    // print(buffer, WHITE, 0);
     outb(0x20, 0x20);
 }
 
