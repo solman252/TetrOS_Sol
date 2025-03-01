@@ -6,6 +6,8 @@ const int grid_height = 20;
 int grid_sel_x = 4;
 int grid_sel_y = 0;
 int current_shape = 0;
+int held_shape = -1;
+bool held_this_turn = false;
 int current_rot = 0;
 float fall_speed = 1.5; // speed in tiles per second
 bool highlight_bg = true;
@@ -263,6 +265,11 @@ int shape_t[4][4][4] = {
     { {1,0,0,0}, {2,1,0,0}, {1,0,0,0}, {0,0,0,0} }
 };
 
+int bag[7];
+int get_from_bag() {
+    return rand(0,7);
+}
+
 int tilemap[20][10];
 bool full_lines[20];
 
@@ -467,6 +474,7 @@ void draw_grid() {
     // Stamp the piece if should_stamp is true (update tilemap)
     if (should_stamp) {
         should_stamp = false;
+        held_this_turn = false;
         bool did_reset = false;
         for (int index = 0; index < 4; index++) {
             int x = current_shape_points[index][0];
@@ -521,7 +529,7 @@ void timer_handler() {
                 grid_sel_y--;
                 should_stamp = true;
                 draw_grid();
-                current_shape = rand(0,7);
+                current_shape = get_from_bag();
                 grid_sel_x = 4;
                 grid_sel_y = 0;
                 current_rot = 0;
@@ -564,27 +572,19 @@ void keyboard_handler() {
     unsigned char scancode = inb(0x60);
     if (pause_tick_count == 0) {
         switch(scancode) {
-            case 0x4B: // left key
+            case 0x4B: // left arrow (move left)
                 grid_sel_x--;
                 if (is_current_shape_illegal_placement()) {
                     grid_sel_x++;
                 }
                 break;
-            case 0x4D: // right key
+            case 0x4D: // right arrow (move right)
                 grid_sel_x++;
                 if (is_current_shape_illegal_placement()) {
                     grid_sel_x--;
                 }
                 break;
-            case 0x48: // down key (moves grid up)
-                grid_sel_y--;
-                if (is_current_shape_illegal_placement()) {
-                    grid_sel_y++;
-                } else {
-                    fall_tick_count = 0;
-                }
-                break;
-            case 0x50: // up key (moves grid down)
+            case 0x50: // down arrow (soft drop)
                 grid_sel_y++;
                 if (is_current_shape_illegal_placement()) {
                     grid_sel_y--;
@@ -592,14 +592,7 @@ void keyboard_handler() {
                     fall_tick_count = 0;
                 }
                 break;
-            case 0x3B: // f1 key to change current shape
-                current_rot = 0;
-                current_shape++;
-                if (current_shape >= 7) {
-                    current_shape = 0;
-                }
-                break;
-            case 0x3C: // f2 key to change shape rotation
+            case 0x48: // up arrow (rotate right)
                 current_rot++;
                 if (current_rot >= 4) {
                     current_rot = 0;
@@ -611,14 +604,61 @@ void keyboard_handler() {
                     }
                 }
                 break;
-            case 0x3D: // f3 key to stamp
-                should_stamp = true;
+            case 0x2C: // z (rotate left)
+                current_rot--;
+                if (current_rot < 0) {
+                    current_rot = 3;
+                }
+                if (is_current_shape_illegal_placement()) {
+                    current_rot++;
+                    if (current_rot >= 4) {
+                        current_rot = 0;
+                    }
+                }
                 break;
-            case 0x3E: // f4 key to toggle highlight/background color
+            case 0x2E: // c (hold)
+                if (!held_this_turn) {
+                    held_this_turn = true;
+                    if (held_shape == -1) {
+                        held_shape = current_shape;
+                        current_shape = get_from_bag();
+                    } else {
+                        int temp = current_shape;
+                        current_shape = held_shape;
+                        held_shape = temp;
+                    }
+                    grid_sel_x = 4;
+                    grid_sel_y = 0;
+                    current_rot = 0;
+                }
+                break;
+            case 0x3B: // f1 (toggle highlights)
                 highlight_bg = !highlight_bg;
                 break;
             default:
                 break;
+            // case 0x3B: // f1 key to change current shape
+            //     current_rot = 0;
+            //     current_shape++;
+            //     if (current_shape >= 7) {
+            //         current_shape = 0;
+            //     }
+            //     break;
+            // case 0x3C: // f2 key to change shape rotation
+            //     current_rot++;
+            //     if (current_rot >= 4) {
+            //         current_rot = 0;
+            //     }
+            //     if (is_current_shape_illegal_placement()) {
+            //         current_rot--;
+            //         if (current_rot < 0) {
+            //             current_rot = 3;
+            //         }
+            //     }
+            //     break;
+            // case 0x3D: // f3 key to stamp
+            //     should_stamp = true;
+            //     break;
         }
     }
     draw_grid();
