@@ -13,7 +13,7 @@ bool show_timer = true;
 bool show_keycodes = false;
 
 char grid_modes[][2] = {
-    {0xC4,0xB4},
+    {0xC4,0xC5}, //    ─┼
     " ."
 };
 
@@ -207,29 +207,21 @@ unsigned int print_cols_at(char *message, char *color, unsigned int line, unsign
     return 1;
 }
 
-
 unsigned int round(float num) {
     return (int)(num * 10 + 0.5) / 10.;
 }
-unsigned int rand(unsigned int start_range,unsigned int end_range)
-{
-    static unsigned int rand = 0xACE1U; /* Any nonzero start state will work. */
 
-    /*check for valid range.*/
-    if(start_range == end_range) {
-        return start_range;
-    }
-
-    /*get the random in end-range.*/
-    rand += 0x3AD;
-    rand %= end_range;
-
-    /*get the random in start-range.*/
-    while(rand < start_range){
-        rand = rand + end_range - start_range;
-    }
-
-    return rand;
+#define RAND_MAX = 2147483647
+static unsigned long rand_state = 6783489;
+void srand(unsigned long seed) {
+    rand_state = seed;
+}
+long rand() {
+    rand_state = (rand_state * 1103515245 + 12345) % 2147483648;
+    return rand_state;
+}
+int randInt(int max) {
+    return rand() % max;
 }
 
 // Shapes as defined previously
@@ -276,9 +268,40 @@ int shape_t[4][4][4] = {
     { {1,0,0,0}, {2,1,0,0}, {1,0,0,0}, {0,0,0,0} }
 };
 
-int bag[7];
+int bag[7] = {-1,-1,-1,-1,-1,-1,-1};
+void shuffle_bag() {   
+    srand(rand_state/(tick_count+56123)); 
+    if (7 > 1) {
+        for (int i = 7 - 1; i > 0; i--) {
+            int j = randInt(7);
+            int t = bag[j];
+            bag[j] = bag[i];
+            bag[i] = t;
+        }
+    }
+}
 int get_from_bag() {
-    return rand(0,7);
+    bool bag_empty = true;
+    for (int i = 0; i < 7; i++) {
+        if (bag[i] != -1) {
+            bag_empty = false;
+            break;
+        }
+    }
+    if (bag_empty) {
+        for (int i = 0; i < 7; i++) {
+            bag[i] = i;
+        }
+        shuffle_bag();
+    }
+    for (int i = 0; i < 7; i++) {
+        if (bag[i] != -1) {
+            int item = bag[i];
+            bag[i] = -1;
+            return item;
+        }
+    }
+    return 0;
 }
 
 int tilemap[20][10];
@@ -290,8 +313,8 @@ void reset() {
     lvl = 0;
     fall_speed = 1.5;
 
-    current_shape = 0;
-    next_shape = 0;
+    current_shape = get_from_bag();
+    next_shape = get_from_bag();
     held_shape = -1;
     held_this_turn = false;
     grid_sel_x = 4;
@@ -801,6 +824,7 @@ void timer_handler() {
 
 void keyboard_handler() {
     unsigned char scancode = inb(0x60);
+    srand(rand_state+((int) (scancode-'0')));
     if (pause_tick_count == 0) {
         switch(scancode) {
             case 0x4B: // left arrow (move left)
