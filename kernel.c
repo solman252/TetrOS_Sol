@@ -950,17 +950,6 @@ void keyboard_handler() {
                     print("                 ", WHITE, 2);
                 }
                 break;
-            case 0x3F: // f5 (lvl up cheat)
-                lines_cleared += 10;
-                lvl = round(lines_cleared / 10);
-                if (lvl < 9) {
-                    fall_speed -= 1.5;
-                } else if (lvl == 9) {
-                    fall_speed -= 0.6;
-                } else if (lvl == 10 || lvl == 13 || lvl == 16 || lvl == 19 || lvl == 29) {
-                    fall_speed -= 0.3;
-                }
-                break;
             default:
                 break;
         }
