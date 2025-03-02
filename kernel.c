@@ -8,8 +8,14 @@ float fall_speed;
 bool held_this_turn;
 bool should_stamp = false;
 bool highlight_bg = true;
+int grid_mode = 0;
 bool show_timer = true;
 bool show_keycodes = false;
+
+char grid_modes[][2] = {
+    {0xC4,0xB4},
+    " ."
+};
 
 volatile unsigned int tick_count = 0;
 volatile unsigned int fall_tick_count = 0;
@@ -443,9 +449,9 @@ void draw_grid() {
     line[pos] = 0xBA;  // ║
     col_line[pos++] = WHITE;
     for (i = 0; i < 4; i++) {
-        line[pos] = 0xC4;  // horizontal line piece
+        line[pos] = grid_modes[grid_mode][0];
         col_line[pos++] = GRAY;
-        line[pos] = 0xB4;  // vertical line piece
+        line[pos] = grid_modes[grid_mode][1];
         col_line[pos++] = GRAY;
     }
     line[pos] = 0xBA;  // ║
@@ -494,9 +500,9 @@ void draw_grid() {
     line[pos] = 0xBA;  // ║
     col_line[pos++] = WHITE;
     for (i = 0; i < 4; i++) {
-        line[pos] = 0xC4;  // horizontal line piece
+        line[pos] = grid_modes[grid_mode][0];
         col_line[pos++] = GRAY;
-        line[pos] = 0xB4;  // vertical line piece
+        line[pos] = grid_modes[grid_mode][1];
         col_line[pos++] = GRAY;
     }
     line[pos] = 0xBA;  // ║
@@ -643,10 +649,10 @@ void draw_grid() {
                 pos++;
             } else {
                 // Draw an empty cell using box-drawing characters (set with WHITE)
-                line[pos] = 0xC4;  // horizontal line piece
+                line[pos] = grid_modes[grid_mode][0];
                 col_line[pos] = GRAY;
                 pos++;
-                line[pos] = 0xB4;  // vertical line piece
+                line[pos] = grid_modes[grid_mode][1];
                 col_line[pos] = GRAY;
                 pos++;
             }
@@ -901,8 +907,15 @@ void keyboard_handler() {
                 break;
             case 0x3D: // f3 (toggle keycode viewer)
                 show_keycodes = !show_keycodes;
-                if (!show_keycodes)
-                print("             ", WHITE, 2);
+                if (!show_keycodes){
+                    print("             ", WHITE, 2);
+                }
+                break;
+            case 0x3E: // f4 (toggle grid mode)
+                grid_mode++;
+                if (grid_mode >= *(&grid_modes + 1) - grid_modes) {
+                    grid_mode = 0;
+                }
                 break;
             default:
                 break;
