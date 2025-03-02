@@ -12,9 +12,10 @@ int grid_mode = 0;
 bool show_timer = true;
 bool show_keycodes = false;
 
-char grid_modes[][2] = {
-    {0xC4,0xC5}, //    ─┼
-    " ."
+char grid_modes[][2][2] = {
+    {{0xC4,0xC5},{GRAY,GRAY}}, //  ─┼
+    {" .",{GRAY,GRAY}},
+    {{' ',0xDC},{0x00,0x02}}
 };
 
 volatile unsigned int tick_count = 0;
@@ -207,8 +208,11 @@ unsigned int print_cols_at(char *message, char *color, unsigned int line, unsign
     return 1;
 }
 
-unsigned int round(float num) {
-    return (int)(num * 10 + 0.5) / 10.;
+int round(float n) {
+    return (int)(n * 10 + 0.5) / 10.;
+}
+int floor(float n) {
+    return (int) n;
 }
 
 #define RAND_MAX = 2147483647
@@ -225,43 +229,43 @@ int randInt(int max) {
 }
 
 // Shapes as defined previously
-int shape_o[4][4][4] = {
+unsigned int shape_o[4][4][4] = {
     { {1,1,0,0}, {2,1,0,0}, {0,0,0,0}, {0,0,0,0} },
     { {1,1,0,0}, {2,1,0,0}, {0,0,0,0}, {0,0,0,0} },
     { {1,1,0,0}, {2,1,0,0}, {0,0,0,0}, {0,0,0,0} },
     { {1,1,0,0}, {2,1,0,0}, {0,0,0,0}, {0,0,0,0} }
 };
-int shape_i[4][4][4] = {
+unsigned int shape_i[4][4][4] = {
     { {1,0,0,0}, {2,0,0,0}, {1,0,0,0}, {1,0,0,0} },
     { {1,1,2,1}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0} },
     { {1,0,0,0}, {1,0,0,0}, {2,0,0,0}, {1,0,0,0} },
     { {1,2,1,1}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0} }
 };
-int shape_s[4][4][4] = {
+unsigned int shape_s[4][4][4] = {
     { {0,1,1,0}, {1,2,0,0}, {0,0,0,0}, {0,0,0,0} },
     { {1,0,0,0}, {2,1,0,0}, {0,1,0,0}, {0,0,0,0} },
     { {0,2,1,0}, {1,1,0,0}, {0,0,0,0}, {0,0,0,0} },
     { {1,0,0,0}, {1,2,0,0}, {0,1,0,0}, {0,0,0,0} }
 };
-int shape_z[4][4][4] = {
+unsigned int shape_z[4][4][4] = {
     { {1,1,0,0}, {0,2,1,0}, {0,0,0,0}, {0,0,0,0} },
     { {0,1,0,0}, {2,1,0,0}, {1,0,0,0}, {0,0,0,0} },
     { {1,2,0,0}, {0,1,1,0}, {0,0,0,0}, {0,0,0,0} },
     { {0,1,0,0}, {1,2,0,0}, {1,0,0,0}, {0,0,0,0} }
 };
-int shape_l[4][4][4] = {
+unsigned int shape_l[4][4][4] = {
     { {1,0,0,0}, {2,0,0,0}, {1,1,0,0}, {0,0,0,0} },
     { {1,2,1,0}, {1,0,0,0}, {0,0,0,0}, {0,0,0,0} },
     { {1,1,0,0}, {0,2,0,0}, {0,1,0,0}, {0,0,0,0} },
     { {0,0,1,0}, {1,2,1,0}, {0,0,0,0}, {0,0,0,0} }
 };
-int shape_j[4][4][4] = {
+unsigned int shape_j[4][4][4] = {
     { {0,1,0,0}, {0,2,0,0}, {1,1,0,0}, {0,0,0,0} },
     { {1,0,0,0}, {1,2,1,0}, {0,0,0,0}, {0,0,0,0} },
     { {1,1,0,0}, {2,0,0,0}, {1,0,0,0}, {0,0,0,0} },
     { {1,2,1,0}, {0,0,1,0}, {0,0,0,0}, {0,0,0,0} }
 };
-int shape_t[4][4][4] = {
+unsigned int shape_t[4][4][4] = {
     { {1,2,1,0}, {0,1,0,0}, {0,0,0,0}, {0,0,0,0} },
     { {0,1,0,0}, {1,2,0,0}, {0,1,0,0}, {0,0,0,0} },
     { {0,1,0,0}, {1,2,1,0}, {0,0,0,0}, {0,0,0,0} },
@@ -272,31 +276,31 @@ int bag[7] = {-1,-1,-1,-1,-1,-1,-1};
 void shuffle_bag() {   
     srand(rand_state/(tick_count+56123)); 
     if (7 > 1) {
-        for (int i = 7 - 1; i > 0; i--) {
-            int j = randInt(7);
-            int t = bag[j];
+        for (unsigned int i = 7 - 1; i > 0; i--) {
+            unsigned int j = randInt(7);
+            unsigned int t = bag[j];
             bag[j] = bag[i];
             bag[i] = t;
         }
     }
 }
-int get_from_bag() {
+unsigned int get_from_bag() {
     bool bag_empty = true;
-    for (int i = 0; i < 7; i++) {
+    for (unsigned int i = 0; i < 7; i++) {
         if (bag[i] != -1) {
             bag_empty = false;
             break;
         }
     }
     if (bag_empty) {
-        for (int i = 0; i < 7; i++) {
+        for (unsigned int i = 0; i < 7; i++) {
             bag[i] = i;
         }
         shuffle_bag();
     }
-    for (int i = 0; i < 7; i++) {
+    for (unsigned int i = 0; i < 7; i++) {
         if (bag[i] != -1) {
-            int item = bag[i];
+            unsigned int item = bag[i];
             bag[i] = -1;
             return item;
         }
@@ -311,7 +315,7 @@ void reset() {
     score = 0;
     lines_cleared = 0;
     lvl = 0;
-    fall_speed = 1.5;
+    fall_speed = 14.4;
 
     current_shape = get_from_bag();
     next_shape = get_from_bag();
@@ -324,8 +328,8 @@ void reset() {
     tick_count = 0;
     fall_tick_count = 0;
 
-    for (int y = 0; y < grid_height; y++) {
-        for (int x = 0; x < grid_width; x++) {
+    for (unsigned int y = 0; y < grid_height; y++) {
+        for (unsigned int x = 0; x < grid_width; x++) {
             tilemap[y][x] = 0;
         }
     }
@@ -363,10 +367,10 @@ void get_shape_points(unsigned int shape, bool rotate) {
     }
     int center_x = 0, center_y = 0;
     int points[4][2] = { {0,0}, {0,0}, {0,0}, {0,0} };
-    int i = 0;
-    for (int y = 0; y < 4; y++) {
+    unsigned int i = 0;
+    for (unsigned int y = 0; y < 4; y++) {
         int *row = rot[y];
-        for (int x = 0; x < 4; x++) {
+        for (unsigned int x = 0; x < 4; x++) {
             int ch = row[x];
             if (ch == 1 || ch == 2) {
                 points[i][0] = x;
@@ -387,7 +391,7 @@ void get_shape_points(unsigned int shape, bool rotate) {
 
 bool is_current_shape_illegal_placement() {
     get_shape_points(current_shape,true);
-    for (int i = 0; i < 4; i++) {
+    for (unsigned int i = 0; i < 4; i++) {
         int x = shape_points[i][0]+grid_sel_x;
         int y = shape_points[i][1]+grid_sel_y;
         if (!(x >= 0 && x < grid_width && y < grid_height && (tilemap[y][x] == 0 || y < 0))) {
@@ -404,13 +408,13 @@ bool is_current_shape_illegal_placement() {
 // Bottom border: ╚ (0xC8), ═ (0xCD), ╝ (0xBC)
 //
 void draw_grid() {
-    int left_margin = (80 - (grid_width * 2 + 2)) / 2;
-    int top_margin = 1+(27 - (grid_height + 2)) / 2;
+    unsigned int left_margin = (80 - (grid_width * 2 + 2)) / 2;
+    unsigned int top_margin = 1+(27 - (grid_height + 2)) / 2;
     
     char line[256];
     char col_line[256];
     char buffer[16];
-    int pos, i;
+    unsigned int pos, i;
     
     pos = 0;
     line[pos] = 0xC9;  // ╔
@@ -472,10 +476,10 @@ void draw_grid() {
     line[pos] = 0xBA;  // ║
     col_line[pos++] = WHITE;
     for (i = 0; i < 4; i++) {
-        line[pos] = grid_modes[grid_mode][0];
-        col_line[pos++] = GRAY;
-        line[pos] = grid_modes[grid_mode][1];
-        col_line[pos++] = GRAY;
+        line[pos] = grid_modes[grid_mode][0][0];
+        col_line[pos++] = grid_modes[grid_mode][1][0];
+        line[pos] = grid_modes[grid_mode][0][1];
+        col_line[pos++] = grid_modes[grid_mode][1][1];
     }
     line[pos] = 0xBA;  // ║
     col_line[pos++] = WHITE;
@@ -523,10 +527,10 @@ void draw_grid() {
     line[pos] = 0xBA;  // ║
     col_line[pos++] = WHITE;
     for (i = 0; i < 4; i++) {
-        line[pos] = grid_modes[grid_mode][0];
-        col_line[pos++] = GRAY;
-        line[pos] = grid_modes[grid_mode][1];
-        col_line[pos++] = GRAY;
+        line[pos] = grid_modes[grid_mode][0][0];
+        col_line[pos++] = grid_modes[grid_mode][1][0];
+        line[pos] = grid_modes[grid_mode][0][1];
+        col_line[pos++] = grid_modes[grid_mode][1][1];
     }
     line[pos] = 0xBA;  // ║
     col_line[pos++] = WHITE;
@@ -547,8 +551,8 @@ void draw_grid() {
 
     // Draw the next shape
     get_shape_points(next_shape,false);
-    int top_offset = 0;
-    int left_offset = 0;
+    unsigned int top_offset = 0;
+    unsigned int left_offset = 0;
     char cell_color = WHITE;
     char cell_inner = WHITE;
     switch(next_shape) {
@@ -583,8 +587,8 @@ void draw_grid() {
     // Draw the held shape
     if (held_shape != -1) {
         get_shape_points(held_shape,false);
-        int top_offset = 0;
-        int left_offset = 0;
+        unsigned int top_offset = 0;
+        unsigned int left_offset = 0;
         char cell_color = WHITE;
         char cell_inner = WHITE;
         switch(held_shape) {
@@ -619,13 +623,13 @@ void draw_grid() {
     
     get_shape_points(current_shape,true);
     // Draw grid rows with vertical borders
-    for (int r = 0; r < grid_height; r++) {
+    for (unsigned int r = 0; r < grid_height; r++) {
         pos = 0;
         // Left border (║)
         line[pos] = 0xBA;
         col_line[pos] = WHITE;
         pos++;
-        for (int c = 0; c < grid_width; c++) {
+        for (unsigned int c = 0; c < grid_width; c++) {
             bool in_points = false;
             for (i = 0; i < 4; i++) {
                 if (c == shape_points[i][0]+grid_sel_x && r == shape_points[i][1]+grid_sel_y) {
@@ -671,13 +675,11 @@ void draw_grid() {
                 col_line[pos] = attr;
                 pos++;
             } else {
-                // Draw an empty cell using box-drawing characters (set with WHITE)
-                line[pos] = grid_modes[grid_mode][0];
-                col_line[pos] = GRAY;
-                pos++;
-                line[pos] = grid_modes[grid_mode][1];
-                col_line[pos] = GRAY;
-                pos++;
+                // Draw an empty cell
+                line[pos] = grid_modes[grid_mode][0][0];
+                col_line[pos++] = grid_modes[grid_mode][1][0];
+                line[pos] = grid_modes[grid_mode][0][1];
+                col_line[pos++] = grid_modes[grid_mode][1][1];
             }
         }
         // Right border (║)
@@ -711,7 +713,7 @@ void draw_grid() {
         should_stamp = false;
         held_this_turn = false;
         bool did_reset = false;
-        for (int index = 0; index < 4; index++) {
+        for (unsigned int index = 0; index < 4; index++) {
             int x = shape_points[index][0]+grid_sel_x;
             int y = shape_points[index][1]+grid_sel_y;
             if (x >= 0 && y >= 0 && x < grid_width && y < grid_height) {
@@ -725,10 +727,10 @@ void draw_grid() {
             }
         }
         if(!did_reset) {
-            int cleared_count = 0;
-            for (int y = 0; y < grid_height; y++) {
+            unsigned int cleared_count = 0;
+            for (unsigned int y = 0; y < grid_height; y++) {
                 bool line_full = true;
-                for (int x = 0; x < grid_width; x++) {
+                for (unsigned int x = 0; x < grid_width; x++) {
                     if (tilemap[y][x] == 0) {
                         line_full = false;
                         break;
@@ -742,13 +744,16 @@ void draw_grid() {
                 full_lines[y] = line_full;
             }
             lines_cleared += cleared_count;
+            unsigned int temp = lvl;
             lvl = round(lines_cleared / 10);
-            if (lvl < 9) {
-                fall_speed += 5/48;
-            } else if (lvl == 9) {
-                fall_speed += 1/24;
-            } else if (lvl == 10 || lvl == 13 || lvl == 16 || lvl == 19 || lvl == 29) {
-                fall_speed += 1/48;
+            if (lvl != temp) {
+                if (lvl < 9) {
+                    fall_speed -= 1.5;
+                } else if (lvl == 9) {
+                    fall_speed -= 0.6;
+                } else if (lvl == 10 || lvl == 13 || lvl == 16 || lvl == 19 || lvl == 29) {
+                    fall_speed -= 0.3;
+                }
             }
             score += round(cleared_count / 4)*(1200*(lvl+1)); // tetrises
             score += round((cleared_count % 4) / 3)*(300*(lvl+1)); // triples
@@ -765,17 +770,21 @@ void timer_handler() {
     tick_count++;
     fall_tick_count++;
     if (tick_count % 18 == 0 && show_timer) {
-        int seconds = round(tick_count / 18);
+        unsigned int seconds = round(tick_count / 18);
         char buffer[16];
         itoa(seconds, buffer, 10);
-        int i = 0;
+        unsigned int i = 0;
         while (buffer[i]) i++;
         buffer[i] = 's';
         buffer[i+1] = '\0';
         print(buffer, WHITE, 1);
     }
     if (pause_tick_count == 0) {
-        if (fall_tick_count % round(18/fall_speed) == 0) {
+        unsigned int fs = round(fall_speed);
+        if (fs == 0) {
+            fs = 1;
+        }
+        if (fall_tick_count % fs == 0) {
             grid_sel_y++;
             if(is_current_shape_illegal_placement()) {
                 grid_sel_y--;
@@ -796,18 +805,18 @@ void timer_handler() {
         if (pause_tick_count < 0) {
             pause_tick_count = 0;
         }
-        for (int y = 0; y < grid_height; y++) {
+        for (unsigned int y = 0; y < grid_height; y++) {
             bool line_full = full_lines[y];
             if(line_full) {
                 if(pause_tick_count == 0) {
-                    for (int y2 = y; y2 > 0; y2--) {
-                        for (int x = 0; x < grid_width; x++) {
+                    for (unsigned int y2 = y; y2 > 0; y2--) {
+                        for (unsigned int x = 0; x < grid_width; x++) {
                             tilemap[y2][x] = tilemap[y2-1][x];
                         }
                     }
                     full_lines[y] = false;
                 } else {
-                    for (int x = 0; x < grid_width; x++) {
+                    for (unsigned int x = 0; x < grid_width; x++) {
                         if (pause_tick_count % 2 == 0) {
                             tilemap[y][x] = 0;
                         } else {
@@ -850,7 +859,7 @@ void keyboard_handler() {
                 }
                 break;
             case 0x39: // space (hard drop)
-                int temp = grid_sel_y;
+                unsigned int temp = grid_sel_y;
                 while(!is_current_shape_illegal_placement()) {
                     grid_sel_y++;
                 }
@@ -898,7 +907,7 @@ void keyboard_handler() {
                         next_shape = get_from_bag();
                         fall_tick_count = 0;
                     } else {
-                        int temp = current_shape;
+                        unsigned int temp = current_shape;
                         current_shape = held_shape;
                         held_shape = temp;
                         fall_tick_count = 0;
@@ -914,41 +923,52 @@ void keyboard_handler() {
             case 0x3B: // f1 (toggle highlights)
                 highlight_bg = !highlight_bg;
                 break;
-            case 0x3C: // f2 (toggle timer)
+            case 0x3C: // f2 (toggle grid mode)
+                grid_mode++;
+                if (grid_mode >= *(&grid_modes + 1) - grid_modes) {
+                    grid_mode = 0;
+                }
+                break;
+            case 0x3D: // f3 (toggle timer)
                 show_timer = !show_timer;
                 if (show_timer) {
-                    int seconds = round(tick_count / 18);
+                    unsigned int seconds = round(tick_count / 18);
                     char buffer[16];
                     itoa(seconds, buffer, 10);
-                    int i = 0;
+                    unsigned int i = 0;
                     while (buffer[i]) i++;
                     buffer[i] = 's';
                     buffer[i+1] = '\0';
                     print(buffer, WHITE, 1);
                 } else {
-                    print("         ", WHITE, 1);
+                    print("        ", WHITE, 1);
                 }
                 break;
-            case 0x3D: // f3 (toggle keycode viewer)
+            case 0x3E: // f4 (toggle keycode viewer)
                 show_keycodes = !show_keycodes;
                 if (!show_keycodes){
-                    print("             ", WHITE, 2);
+                    print("                 ", WHITE, 2);
                 }
                 break;
-            case 0x3E: // f4 (toggle grid mode)
-                grid_mode++;
-                if (grid_mode >= *(&grid_modes + 1) - grid_modes) {
-                    grid_mode = 0;
+            case 0x3F: // f5 (lvl up cheat)
+                lines_cleared += 10;
+                lvl = round(lines_cleared / 10);
+                if (lvl < 9) {
+                    fall_speed -= 1.5;
+                } else if (lvl == 9) {
+                    fall_speed -= 0.6;
+                } else if (lvl == 10 || lvl == 13 || lvl == 16 || lvl == 19 || lvl == 29) {
+                    fall_speed -= 0.3;
                 }
                 break;
             default:
                 break;
         }
         if (show_keycodes) {
-            print("KEYCODE:     ", WHITE, 2);
+            print("KEYCODE:         ", WHITE, 2);
             char buffer[16];
             itoa(scancode, buffer, 10);
-            print_at(buffer, WHITE, 2, 9);
+            print_at(buffer, WHITE, 2, 10);
         }
     }
     draw_grid();
