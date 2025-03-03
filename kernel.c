@@ -15,7 +15,7 @@ bool show_keycodes = false;
 char grid_modes[][2][2] = {
     {{0xC4,0xC5},{GRAY,GRAY}}, //  ─┼
     {" .",{GRAY,GRAY}},
-    {{' ',0xDC},{0x00,0x02}}
+    {{' ',0xDC},{BLACK,GRAY}}
 };
 
 volatile unsigned int tick_count = 0;
@@ -229,54 +229,54 @@ int randInt(int max) {
 }
 
 // Shapes as defined previously
-unsigned int shape_o[4][4][4] = {
+int shape_o[4][4][4] = {
     { {1,1,0,0}, {2,1,0,0}, {0,0,0,0}, {0,0,0,0} },
     { {1,1,0,0}, {2,1,0,0}, {0,0,0,0}, {0,0,0,0} },
     { {1,1,0,0}, {2,1,0,0}, {0,0,0,0}, {0,0,0,0} },
     { {1,1,0,0}, {2,1,0,0}, {0,0,0,0}, {0,0,0,0} }
 };
-unsigned int shape_i[4][4][4] = {
+int shape_i[4][4][4] = {
+    { {1,2,1,1}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0} },
     { {1,0,0,0}, {2,0,0,0}, {1,0,0,0}, {1,0,0,0} },
     { {1,1,2,1}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0} },
-    { {1,0,0,0}, {1,0,0,0}, {2,0,0,0}, {1,0,0,0} },
-    { {1,2,1,1}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0} }
+    { {1,0,0,0}, {1,0,0,0}, {2,0,0,0}, {1,0,0,0} }
 };
-unsigned int shape_s[4][4][4] = {
+int shape_s[4][4][4] = {
     { {0,1,1,0}, {1,2,0,0}, {0,0,0,0}, {0,0,0,0} },
     { {1,0,0,0}, {2,1,0,0}, {0,1,0,0}, {0,0,0,0} },
     { {0,2,1,0}, {1,1,0,0}, {0,0,0,0}, {0,0,0,0} },
     { {1,0,0,0}, {1,2,0,0}, {0,1,0,0}, {0,0,0,0} }
 };
-unsigned int shape_z[4][4][4] = {
+int shape_z[4][4][4] = {
     { {1,1,0,0}, {0,2,1,0}, {0,0,0,0}, {0,0,0,0} },
     { {0,1,0,0}, {2,1,0,0}, {1,0,0,0}, {0,0,0,0} },
     { {1,2,0,0}, {0,1,1,0}, {0,0,0,0}, {0,0,0,0} },
     { {0,1,0,0}, {1,2,0,0}, {1,0,0,0}, {0,0,0,0} }
 };
-unsigned int shape_l[4][4][4] = {
+int shape_l[4][4][4] = {
+    { {0,0,1,0}, {1,2,1,0}, {0,0,0,0}, {0,0,0,0} },
     { {1,0,0,0}, {2,0,0,0}, {1,1,0,0}, {0,0,0,0} },
     { {1,2,1,0}, {1,0,0,0}, {0,0,0,0}, {0,0,0,0} },
-    { {1,1,0,0}, {0,2,0,0}, {0,1,0,0}, {0,0,0,0} },
-    { {0,0,1,0}, {1,2,1,0}, {0,0,0,0}, {0,0,0,0} }
+    { {1,1,0,0}, {0,2,0,0}, {0,1,0,0}, {0,0,0,0} }
 };
-unsigned int shape_j[4][4][4] = {
-    { {0,1,0,0}, {0,2,0,0}, {1,1,0,0}, {0,0,0,0} },
+int shape_j[4][4][4] = {
     { {1,0,0,0}, {1,2,1,0}, {0,0,0,0}, {0,0,0,0} },
     { {1,1,0,0}, {2,0,0,0}, {1,0,0,0}, {0,0,0,0} },
-    { {1,2,1,0}, {0,0,1,0}, {0,0,0,0}, {0,0,0,0} }
+    { {1,2,1,0}, {0,0,1,0}, {0,0,0,0}, {0,0,0,0} },
+    { {0,1,0,0}, {0,2,0,0}, {1,1,0,0}, {0,0,0,0} }
 };
-unsigned int shape_t[4][4][4] = {
-    { {1,2,1,0}, {0,1,0,0}, {0,0,0,0}, {0,0,0,0} },
-    { {0,1,0,0}, {1,2,0,0}, {0,1,0,0}, {0,0,0,0} },
+int shape_t[4][4][4] = {
     { {0,1,0,0}, {1,2,1,0}, {0,0,0,0}, {0,0,0,0} },
-    { {1,0,0,0}, {2,1,0,0}, {1,0,0,0}, {0,0,0,0} }
+    { {1,0,0,0}, {2,1,0,0}, {1,0,0,0}, {0,0,0,0} },
+    { {1,2,1,0}, {0,1,0,0}, {0,0,0,0}, {0,0,0,0} },
+    { {0,1,0,0}, {1,2,0,0}, {0,1,0,0}, {0,0,0,0} }
 };
 
 int bag[7] = {-1,-1,-1,-1,-1,-1,-1};
 void shuffle_bag() {   
     srand(rand_state/(tick_count+56123)); 
     if (7 > 1) {
-        for (unsigned int i = 7 - 1; i > 0; i--) {
+        for (int i = 7 - 1; i > 0; i--) {
             unsigned int j = randInt(7);
             unsigned int t = bag[j];
             bag[j] = bag[i];
@@ -286,19 +286,19 @@ void shuffle_bag() {
 }
 unsigned int get_from_bag() {
     bool bag_empty = true;
-    for (unsigned int i = 0; i < 7; i++) {
+    for (int i = 0; i < 7; i++) {
         if (bag[i] != -1) {
             bag_empty = false;
             break;
         }
     }
     if (bag_empty) {
-        for (unsigned int i = 0; i < 7; i++) {
+        for (int i = 0; i < 7; i++) {
             bag[i] = i;
         }
         shuffle_bag();
     }
-    for (unsigned int i = 0; i < 7; i++) {
+    for (int i = 0; i < 7; i++) {
         if (bag[i] != -1) {
             unsigned int item = bag[i];
             bag[i] = -1;
@@ -322,14 +322,14 @@ void reset() {
     held_shape = -1;
     held_this_turn = false;
     grid_sel_x = 4;
-    grid_sel_y = 0;
+    grid_sel_y = 1;
     current_rot = 0;
 
     tick_count = 0;
     fall_tick_count = 0;
 
-    for (unsigned int y = 0; y < grid_height; y++) {
-        for (unsigned int x = 0; x < grid_width; x++) {
+    for (int y = 0; y < grid_height; y++) {
+        for (int x = 0; x < grid_width; x++) {
             tilemap[y][x] = 0;
         }
     }
@@ -340,7 +340,7 @@ void reset() {
 }
 
 int shape_points[4][2];
-void get_shape_points(unsigned int shape, bool rotate) {
+void get_shape_points(int shape, bool rotate) {
     int (*rot)[4];
     if (rotate) {
         switch(shape) {
@@ -368,9 +368,9 @@ void get_shape_points(unsigned int shape, bool rotate) {
     int center_x = 0, center_y = 0;
     int points[4][2] = { {0,0}, {0,0}, {0,0}, {0,0} };
     unsigned int i = 0;
-    for (unsigned int y = 0; y < 4; y++) {
+    for (int y = 0; y < 4; y++) {
         int *row = rot[y];
-        for (unsigned int x = 0; x < 4; x++) {
+        for (int x = 0; x < 4; x++) {
             int ch = row[x];
             if (ch == 1 || ch == 2) {
                 points[i][0] = x;
@@ -391,7 +391,7 @@ void get_shape_points(unsigned int shape, bool rotate) {
 
 bool is_current_shape_illegal_placement() {
     get_shape_points(current_shape,true);
-    for (unsigned int i = 0; i < 4; i++) {
+    for (int i = 0; i < 4; i++) {
         int x = shape_points[i][0]+grid_sel_x;
         int y = shape_points[i][1]+grid_sel_y;
         if (!(x >= 0 && x < grid_width && y < grid_height && (tilemap[y][x] == 0 || y < 0))) {
@@ -417,15 +417,27 @@ void draw_grid() {
     unsigned int pos, i;
     
     pos = 0;
-    line[pos] = 0xC9;  // ╔
+    if (highlight_bg) {
+        line[pos] = 0xC9;  // ╔
+    } else {
+        line[pos] = '+';
+    }
     col_line[pos] = WHITE;
     pos++;
     for (i = 0; i < grid_width * 2; i++) {
-        line[pos] = 0xCD;  // ═
+        if (highlight_bg) {
+            line[pos] = 0xCD;  // ═
+        } else {
+            line[pos] = '-';
+        }
         col_line[pos] = WHITE;
         pos++;
     }
-    line[pos] = 0xBB;  // ╗
+    if (highlight_bg) {
+        line[pos] = 0xBB;  // ╗
+    } else {
+        line[pos] = '+';
+    }
     col_line[pos] = WHITE;
     pos++;
     line[pos] = '\0';
@@ -449,39 +461,86 @@ void draw_grid() {
 
     // Draw Next Shape Box
     pos = 0;
-    line[pos++] = 0xC9;  // ╔
-    for (i = 0; i < 8; i++) {
-        line[pos++] = 0xCD;  // ═
+    if (highlight_bg) {
+        line[pos++] = 0xC9;  // ╔
+    } else {
+        line[pos++] = '+';
     }
-    line[pos++] = 0xBB;  // ╗
+    for (i = 0; i < 8; i++) {
+        if (highlight_bg) {
+            line[pos++] = 0xCD;  // ═
+        } else {
+            line[pos++] = '-';
+        }
+    }
+    if (highlight_bg) {
+        line[pos++] = 0xBB;  // ╗
+    } else {
+        line[pos++] = '+';
+    }
     line[pos] = '\0';
     print_at(line, WHITE, top_margin, left_margin+grid_width*2+2+6);
     pos = 0;
-    line[pos++] = 0xBA;  // ║
+    if (highlight_bg) {
+        line[pos++] = 0xBA;  // ║
+    } else {
+        line[pos++] = '|';
+    }
     for (i = 0; i < 8; i++) {
         line[pos++] = "  NEXT: "[i];
     }
-    line[pos++] = 0xBA;  // ║
+    if (highlight_bg) {
+        line[pos++] = 0xBA;  // ║
+    } else {
+        line[pos++] = '|';
+    }
     line[pos] = '\0';
     print_at(line, WHITE, top_margin+1, left_margin+grid_width*2+2+6);
     pos = 0;
-    line[pos++] = 0xCC;  // ╠ 
-    for (i = 0; i < 8; i++) {
-        line[pos++] = 0xCD;  // ═
+    if (highlight_bg) {
+        line[pos++] = 0xCC;  // ╠ 
+    } else {
+        line[pos++] = '+';
     }
-    line[pos++] = 0xB9;  // ╣
+    for (i = 0; i < 8; i++) {
+        if (highlight_bg) {
+            line[pos++] = 0xCD;  // ═
+        } else {
+            line[pos++] = '-';
+        }
+    }
+    if (highlight_bg) {
+        line[pos++] = 0xB9;  // ╣
+    } else {
+        line[pos++] = '+';
+    }
     line[pos] = '\0';
     print_at(line, WHITE, top_margin+2, left_margin+grid_width*2+2+6);
     pos = 0;
-    line[pos] = 0xBA;  // ║
+    if (highlight_bg) {
+        line[pos] = 0xBA;  // ║
+    } else {
+        line[pos] = '|';
+    }
     col_line[pos++] = WHITE;
     for (i = 0; i < 4; i++) {
-        line[pos] = grid_modes[grid_mode][0][0];
-        col_line[pos++] = grid_modes[grid_mode][1][0];
-        line[pos] = grid_modes[grid_mode][0][1];
-        col_line[pos++] = grid_modes[grid_mode][1][1];
+        if (highlight_bg) {
+            line[pos] = grid_modes[grid_mode][0][0];
+            col_line[pos++] = grid_modes[grid_mode][1][0];
+            line[pos] = grid_modes[grid_mode][0][1];
+            col_line[pos++] = grid_modes[grid_mode][1][1];
+        } else {
+            line[pos] = grid_modes[1][0][0];
+            col_line[pos++] = grid_modes[1][1][0];
+            line[pos] = grid_modes[1][0][1];
+            col_line[pos++] = grid_modes[1][1][1];
+        }
     }
-    line[pos] = 0xBA;  // ║
+    if (highlight_bg) {
+        line[pos] = 0xBA;  // ║
+    } else {
+        line[pos] = '|';
+    }
     col_line[pos++] = WHITE;
     col_line[pos] = '\0';
     print_cols_at(line, col_line, top_margin+3, left_margin+grid_width*2+2+6);
@@ -490,49 +549,108 @@ void draw_grid() {
     print_cols_at(line, col_line, top_margin+6, left_margin+grid_width*2+2+6);
     line[pos] = '\0';
     pos = 0;
-    line[pos++] = 0xC8;  // ╚
-    for (i = 0; i < 8; i++) {
-        line[pos++] = 0xCD;  // ═
+    if (highlight_bg) {
+        line[pos++] = 0xC8;  // ╚
+    } else {
+        line[pos++] = '+';
     }
-    line[pos++] = 0xBC;  // ╝
+    for (i = 0; i < 8; i++) {
+        if (highlight_bg) {
+            line[pos++] = 0xCD;  // ═
+        } else {
+            line[pos++] = '-';
+        }
+    }
+    if (highlight_bg) {
+        line[pos++] = 0xBC;  // ╝
+    } else {
+        line[pos++] = '+';
+    }
     line[pos] = '\0';
     print_at(line, WHITE, top_margin+7, left_margin+grid_width*2+2+6);
 
     // Draw Held Shape Box
     pos = 0;
-    line[pos++] = 0xC9;  // ╔
-    for (i = 0; i < 8; i++) {
-        line[pos++] = 0xCD;  // ═
+    if (highlight_bg) {
+        line[pos++] = 0xC9;  // ╔
+    } else {
+        line[pos++] = '+';
     }
-    line[pos++] = 0xBB;  // ╗
+    for (i = 0; i < 8; i++) {
+        if (highlight_bg) {
+            line[pos++] = 0xCD;  // ═
+        } else {
+            line[pos++] = '-';
+        }
+    }
+    if (highlight_bg) {
+        line[pos++] = 0xBB;  // ╗
+    } else {
+        line[pos++] = '+';
+    }
     line[pos] = '\0';
     print_at(line, WHITE, top_margin+10, left_margin+grid_width*2+2+6);
     pos = 0;
-    line[pos++] = 0xBA;  // ║
+    if (highlight_bg) {
+        line[pos++] = 0xBA;  // ║
+    } else {
+        line[pos++] = '|';
+    }
     for (i = 0; i < 8; i++) {
         line[pos++] = "  HELD: "[i];
     }
-    line[pos++] = 0xBA;  // ║
+    if (highlight_bg) {
+        line[pos++] = 0xBA;  // ║
+    } else {
+        line[pos++] = '|';
+    }
     line[pos] = '\0';
     print_at(line, WHITE, top_margin+11, left_margin+grid_width*2+2+6);
     pos = 0;
-    line[pos++] = 0xCC;  // ╠ 
-    for (i = 0; i < 8; i++) {
-        line[pos++] = 0xCD;  // ═
+    if (highlight_bg) {
+        line[pos++] = 0xCC;  // ╠ 
+    } else {
+        line[pos++] = '+';
     }
-    line[pos++] = 0xB9;  // ╣
+    for (i = 0; i < 8; i++) {
+        if (highlight_bg) {
+            line[pos++] = 0xCD;  // ═
+        } else {
+            line[pos++] = '-';
+        }
+    }
+    if (highlight_bg) {
+        line[pos++] = 0xB9;  // ╣
+    } else {
+        line[pos++] = '+';
+    }
     line[pos] = '\0';
     print_at(line, WHITE, top_margin+12, left_margin+grid_width*2+2+6);
     pos = 0;
-    line[pos] = 0xBA;  // ║
+    if (highlight_bg) {
+        line[pos] = 0xBA;  // ║
+    } else {
+        line[pos] = '|';
+    }
     col_line[pos++] = WHITE;
     for (i = 0; i < 4; i++) {
-        line[pos] = grid_modes[grid_mode][0][0];
-        col_line[pos++] = grid_modes[grid_mode][1][0];
-        line[pos] = grid_modes[grid_mode][0][1];
-        col_line[pos++] = grid_modes[grid_mode][1][1];
+        if (highlight_bg) {
+            line[pos] = grid_modes[grid_mode][0][0];
+            col_line[pos++] = grid_modes[grid_mode][1][0];
+            line[pos] = grid_modes[grid_mode][0][1];
+            col_line[pos++] = grid_modes[grid_mode][1][1];
+        } else {
+            line[pos] = grid_modes[1][0][0];
+            col_line[pos++] = grid_modes[1][1][0];
+            line[pos] = grid_modes[1][0][1];
+            col_line[pos++] = grid_modes[1][1][1];
+        }
     }
-    line[pos] = 0xBA;  // ║
+    if (highlight_bg) {
+        line[pos] = 0xBA;  // ║
+    } else {
+        line[pos] = '|';
+    }
     col_line[pos++] = WHITE;
     col_line[pos] = '\0';
     print_cols_at(line, col_line, top_margin+13, left_margin+grid_width*2+2+6);
@@ -541,11 +659,23 @@ void draw_grid() {
     print_cols_at(line, col_line, top_margin+16, left_margin+grid_width*2+2+6);
     line[pos] = '\0';
     pos = 0;
-    line[pos++] = 0xC8;  // ╚
-    for (i = 0; i < 8; i++) {
-        line[pos++] = 0xCD;  // ═
+    if (highlight_bg) {
+        line[pos++] = 0xC8;  // ╚
+    } else {
+        line[pos++] = '+';
     }
-    line[pos++] = 0xBC;  // ╝
+    for (i = 0; i < 8; i++) {
+        if (highlight_bg) {
+            line[pos++] = 0xCD;  // ═
+        } else {
+            line[pos++] = '-';
+        }
+    }
+    if (highlight_bg) {
+        line[pos++] = 0xBC;  // ╝
+    } else {
+        line[pos++] = '+';
+    }
     line[pos] = '\0';
     print_at(line, WHITE, top_margin+17, left_margin+grid_width*2+2+6);
 
@@ -557,11 +687,11 @@ void draw_grid() {
     char cell_inner = WHITE;
     switch(next_shape) {
         case 0: cell_color = YELLOW; cell_inner = LIGHT_YELLOW; top_offset = 1; left_offset = 2; break;
-        case 1: cell_color = CYAN; cell_inner = LIGHT_CYAN; top_offset = 0; left_offset = 2; break;
+        case 1: cell_color = CYAN; cell_inner = LIGHT_CYAN; top_offset = 2; left_offset = 0; break;
         case 2: cell_color = GREEN; cell_inner = LIGHT_GREEN; top_offset = 1; left_offset = 1; break;
         case 3: cell_color = RED; cell_inner = LIGHT_RED; top_offset = 1; left_offset = 1; break;
-        case 4: cell_color = ORANGE; cell_inner = LIGHT_ORANGE; top_offset = 1; left_offset = 2; break;
-        case 5: cell_color = BLUE; cell_inner = LIGHT_BLUE; top_offset = 1; left_offset = 2; break;
+        case 4: cell_color = ORANGE; cell_inner = LIGHT_ORANGE; top_offset = 1; left_offset = 1; break;
+        case 5: cell_color = BLUE; cell_inner = LIGHT_BLUE; top_offset = 1; left_offset = 1; break;
         case 6: cell_color = PURPLE; cell_inner = LIGHT_PURPLE; top_offset = 1; left_offset = 1; break;
     }
     unsigned char attr;
@@ -622,14 +752,27 @@ void draw_grid() {
     }
     
     get_shape_points(current_shape,true);
+
+    // Ghost stuff
+    unsigned int temp = grid_sel_y;
+    while(!is_current_shape_illegal_placement()) {
+        grid_sel_y++;
+    }
+    grid_sel_y--;
+    unsigned int ghost_y = grid_sel_y;
+    grid_sel_y = temp;
+
     // Draw grid rows with vertical borders
-    for (unsigned int r = 0; r < grid_height; r++) {
+    for (int r = 0; r < grid_height; r++) {
         pos = 0;
-        // Left border (║)
-        line[pos] = 0xBA;
+        if (highlight_bg) {
+            line[pos] = 0xBA;  // ║
+        } else {
+            line[pos] = '|';
+        }
         col_line[pos] = WHITE;
         pos++;
-        for (unsigned int c = 0; c < grid_width; c++) {
+        for (int c = 0; c < grid_width; c++) {
             bool in_points = false;
             for (i = 0; i < 4; i++) {
                 if (c == shape_points[i][0]+grid_sel_x && r == shape_points[i][1]+grid_sel_y) {
@@ -637,8 +780,21 @@ void draw_grid() {
                     break;
                 }
             }
-            if (in_points || tilemap[r][c] != 0) {
-                char cell_color = WHITE;
+            bool in_ghost_points = false;
+            for (i = 0; i < 4; i++) {
+                if (c == shape_points[i][0]+grid_sel_x && r == shape_points[i][1]+ghost_y) {
+                    in_ghost_points = true;
+                    break;
+                }
+            }
+            if (pause_tick_count > 0) {
+                in_ghost_points = false;
+            }
+            if (in_ghost_points || in_points || tilemap[r][c] != 0) {
+                char cell_color = BLACK;
+                if (!highlight_bg) {
+                    cell_color = GRAY;
+                }
                 char cell_inner = WHITE;
                 if (in_points) {
                     switch(current_shape + 1) {
@@ -650,8 +806,9 @@ void draw_grid() {
                         case 6: cell_color = BLUE; cell_inner = LIGHT_BLUE; break;
                         case 7: cell_color = PURPLE; cell_inner = LIGHT_PURPLE; break;
                     }
-                } else {
+                } else if (tilemap[r][c] != 0) {
                     switch(tilemap[r][c]) {
+                        case -1: cell_color = WHITE; cell_inner = WHITE; break;
                         case 1: cell_color = YELLOW; cell_inner = LIGHT_YELLOW; break;
                         case 2: cell_color = CYAN; cell_inner = LIGHT_CYAN; break;
                         case 3: cell_color = GREEN; cell_inner = LIGHT_GREEN; break;
@@ -662,28 +819,48 @@ void draw_grid() {
                     }
                 }
                 unsigned char attr;
-                if (highlight_bg && (tilemap[r][c] != 0 || in_points)) {
+                if (highlight_bg && (tilemap[r][c] != 0 || in_points || in_ghost_points)) {
                     attr = (cell_color << 4) | cell_inner;
                 } else {
                     attr = cell_color;
                 }
                 // Draw the cell as "[ ]" with the proper attribute
-                line[pos] = '[';
+                if (in_ghost_points) {
+                    // line[pos] = 0xB0;
+                    line[pos] = '[';
+                } else {
+                    line[pos] = '[';
+                }
                 col_line[pos] = attr;
                 pos++;
-                line[pos] = ']';
+                if (in_ghost_points) {
+                    // line[pos] = 0xB0;
+                    line[pos] = ']';
+                } else {
+                    line[pos] = ']';
+                }
                 col_line[pos] = attr;
                 pos++;
             } else {
                 // Draw an empty cell
-                line[pos] = grid_modes[grid_mode][0][0];
-                col_line[pos++] = grid_modes[grid_mode][1][0];
-                line[pos] = grid_modes[grid_mode][0][1];
-                col_line[pos++] = grid_modes[grid_mode][1][1];
+                if (highlight_bg) {
+                    line[pos] = grid_modes[grid_mode][0][0];
+                    col_line[pos++] = grid_modes[grid_mode][1][0];
+                    line[pos] = grid_modes[grid_mode][0][1];
+                    col_line[pos++] = grid_modes[grid_mode][1][1];
+                } else {
+                    line[pos] = grid_modes[1][0][0];
+                    col_line[pos++] = grid_modes[1][1][0];
+                    line[pos] = grid_modes[1][0][1];
+                    col_line[pos++] = grid_modes[1][1][1];
+                }
             }
         }
-        // Right border (║)
-        line[pos] = 0xBA;
+        if (highlight_bg) {
+            line[pos] = 0xBA;  // ║
+        } else {
+            line[pos] = '|';
+        }
         col_line[pos] = WHITE;
         pos++;
         line[pos] = '\0';
@@ -693,15 +870,27 @@ void draw_grid() {
     
     // Draw bottom border using ╚, ═, ╝
     pos = 0;
-    line[pos] = 0xC8;  // ╚
+    if (highlight_bg) {
+        line[pos] = 0xC8;  // ╚
+    } else {
+        line[pos] = '+';
+    }
     col_line[pos] = WHITE;
     pos++;
     for (i = 0; i < grid_width * 2; i++) {
-        line[pos] = 0xCD;  // ═
+        if (highlight_bg) {
+            line[pos] = 0xCD;  // ═
+        } else {
+            line[pos] = '-';
+        }
         col_line[pos] = WHITE;
         pos++;
     }
-    line[pos] = 0xBC;  // ╝
+    if (highlight_bg) {
+        line[pos] = 0xBC;  // ╝
+    } else {
+        line[pos] = '+';
+    }
     col_line[pos] = WHITE;
     pos++;
     line[pos] = '\0';
@@ -713,7 +902,7 @@ void draw_grid() {
         should_stamp = false;
         held_this_turn = false;
         bool did_reset = false;
-        for (unsigned int index = 0; index < 4; index++) {
+        for (int index = 0; index < 4; index++) {
             int x = shape_points[index][0]+grid_sel_x;
             int y = shape_points[index][1]+grid_sel_y;
             if (x >= 0 && y >= 0 && x < grid_width && y < grid_height) {
@@ -728,9 +917,9 @@ void draw_grid() {
         }
         if(!did_reset) {
             unsigned int cleared_count = 0;
-            for (unsigned int y = 0; y < grid_height; y++) {
+            for (int y = 0; y < grid_height; y++) {
                 bool line_full = true;
-                for (unsigned int x = 0; x < grid_width; x++) {
+                for (int x = 0; x < grid_width; x++) {
                     if (tilemap[y][x] == 0) {
                         line_full = false;
                         break;
@@ -794,7 +983,7 @@ void timer_handler() {
                 next_shape = get_from_bag();
                 fall_tick_count = 0;
                 grid_sel_x = 4;
-                grid_sel_y = 0;
+                grid_sel_y = 1;
                 current_rot = 0;
             }
         }
@@ -805,18 +994,18 @@ void timer_handler() {
         if (pause_tick_count < 0) {
             pause_tick_count = 0;
         }
-        for (unsigned int y = 0; y < grid_height; y++) {
+        for (int y = 0; y < grid_height; y++) {
             bool line_full = full_lines[y];
             if(line_full) {
                 if(pause_tick_count == 0) {
-                    for (unsigned int y2 = y; y2 > 0; y2--) {
-                        for (unsigned int x = 0; x < grid_width; x++) {
+                    for (int y2 = y; y2 > 0; y2--) {
+                        for (int x = 0; x < grid_width; x++) {
                             tilemap[y2][x] = tilemap[y2-1][x];
                         }
                     }
                     full_lines[y] = false;
                 } else {
-                    for (unsigned int x = 0; x < grid_width; x++) {
+                    for (int x = 0; x < grid_width; x++) {
                         if (pause_tick_count % 2 == 0) {
                             tilemap[y][x] = 0;
                         } else {
@@ -871,7 +1060,7 @@ void keyboard_handler() {
                 current_shape = next_shape;
                 next_shape = get_from_bag();
                 grid_sel_x = 4;
-                grid_sel_y = 0;
+                grid_sel_y = 1;
                 current_rot = 0;
                 break;
             case 0x48: // up arrow (rotate right)
@@ -913,7 +1102,7 @@ void keyboard_handler() {
                         fall_tick_count = 0;
                     }
                     grid_sel_x = 4;
-                    grid_sel_y = 0;
+                    grid_sel_y = 1;
                     current_rot = 0;
                 }
                 break;
@@ -924,9 +1113,11 @@ void keyboard_handler() {
                 highlight_bg = !highlight_bg;
                 break;
             case 0x3C: // f2 (toggle grid mode)
-                grid_mode++;
-                if (grid_mode >= *(&grid_modes + 1) - grid_modes) {
-                    grid_mode = 0;
+                if (highlight_bg) {
+                    grid_mode++;
+                    if (grid_mode >= *(&grid_modes + 1) - grid_modes) {
+                        grid_mode = 0;
+                    }
                 }
                 break;
             case 0x3D: // f3 (toggle timer)

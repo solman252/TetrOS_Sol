@@ -48,4 +48,7 @@ void init_timer();
 //kernel main function
 void k_main();
 
+//kernel draw grid func
+void draw_grid();
+
 #endif
