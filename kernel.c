@@ -11,6 +11,21 @@ bool highlight_bg = true;
 int grid_mode = 0;
 bool show_timer = true;
 bool show_keycodes = false;
+bool konami = false;
+char konami_inputs[11][2] = {
+    {72,200}, // up
+    {72,200}, // up
+    {80,208}, // down
+    {80,208}, // down
+    {75,203}, // left
+    {77,205}, // right
+    {75,203}, // left
+    {77,205}, // right
+    {48,176}, // B
+    {30,158}, // A
+    {28,156} // enter
+};
+int konami_progress = 0;
 
 char grid_modes[][2][2] = {
     {{0xC4,0xC5},{GRAY,GRAY}}, //  ─┼
@@ -327,6 +342,8 @@ void reset() {
 
     tick_count = 0;
     fall_tick_count = 0;
+
+    konami = false;
 
     for (int y = 0; y < grid_height; y++) {
         for (int x = 0; x < grid_width; x++) {
@@ -974,7 +991,11 @@ void timer_handler() {
             fs = 1;
         }
         if (fall_tick_count % fs == 0) {
-            grid_sel_y++;
+            if (konami) {
+                grid_sel_x--;
+            } else {
+                grid_sel_y++;
+            }
             if(is_current_shape_illegal_placement()) {
                 grid_sel_y--;
                 should_stamp = true;
@@ -1144,6 +1165,17 @@ void keyboard_handler() {
             default:
                 break;
         }
+        // Konami handling
+        if (scancode == konami_inputs[konami_progress][1]) {
+            konami_progress++;
+            if (konami_progress == 11) {
+                konami_progress = 0;
+                konami = !konami;
+            }
+        } else if (scancode != konami_inputs[konami_progress][0]) {
+            konami_progress = 0;
+        }
+
         if (show_keycodes) {
             print("KEYCODE:         ", WHITE, 2);
             char buffer[16];
