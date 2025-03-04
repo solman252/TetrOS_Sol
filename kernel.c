@@ -12,7 +12,7 @@ int grid_mode = 0;
 bool show_timer = true;
 bool show_keycodes = false;
 bool konami = false;
-char konami_inputs[11][2] = {
+int konami_inputs[11][2] = {
     {72,200}, // up
     {72,200}, // up
     {80,208}, // down
@@ -344,6 +344,7 @@ void reset() {
     fall_tick_count = 0;
 
     konami = false;
+    konami_progress = 0;
 
     for (int y = 0; y < grid_height; y++) {
         for (int x = 0; x < grid_width; x++) {
@@ -405,13 +406,43 @@ void get_shape_points(int shape, bool rotate) {
         shape_points[i][1] = points[i][1] - center_y;
     }
 }
-
-bool is_current_shape_illegal_placement() {
+bool legality[5];
+bool illegality_arr[5];
+void get_current_shape_illegality() {
     get_shape_points(current_shape,true);
+    for (int i = 0; i < 5; i++) {
+        illegality_arr[i] = true;
+    }
     for (int i = 0; i < 4; i++) {
         int x = shape_points[i][0]+grid_sel_x;
         int y = shape_points[i][1]+grid_sel_y;
-        if (!(x >= 0 && x < grid_width && y < grid_height && (tilemap[y][x] == 0 || y < 0))) {
+        if (tilemap[y][x] != 0) {
+            illegality_arr[0] = false;
+        }
+        if (x < 0) {
+            illegality_arr[1] = false;
+        }
+        if (x >= grid_width) {
+            illegality_arr[2] = false;
+        }
+        if (y < 0) {
+            illegality_arr[3] = false;
+        }
+        if (y >= grid_height) {
+            illegality_arr[4] = false;
+        }
+    }
+    for (int i = 0; i < 5; i++) {
+        illegality_arr[i] = !illegality_arr[i];
+    }
+}
+bool illegality(unsigned int i) {
+    get_current_shape_illegality();
+    return illegality_arr[i];
+}
+bool current_shape_any_illegality() {
+    for (int i = 0; i < 5; i++) {
+        if (illegality(i)) {
             return true;
         }
     }
@@ -771,13 +802,25 @@ void draw_grid() {
     get_shape_points(current_shape,true);
 
     // Ghost stuff
-    unsigned int temp = grid_sel_y;
-    while(!is_current_shape_illegal_placement()) {
-        grid_sel_y++;
+    unsigned int temp;
+    unsigned int ghost_y;
+    if (konami) {
+        temp = grid_sel_x;
+        while(!(illegality(1) || illegality(0))) {
+            grid_sel_x--;
+        }
+        grid_sel_x++;
+        ghost_y = grid_sel_x;
+        grid_sel_x = temp;
+    } else {
+        temp = grid_sel_y;
+        while(!(illegality(4) || illegality(0))) {
+            grid_sel_y++;
+        }
+        grid_sel_y--;
+        ghost_y = grid_sel_y;
+        grid_sel_y = temp;
     }
-    grid_sel_y--;
-    unsigned int ghost_y = grid_sel_y;
-    grid_sel_y = temp;
 
     // Draw grid rows with vertical borders
     for (int r = 0; r < grid_height; r++) {
@@ -799,9 +842,16 @@ void draw_grid() {
             }
             bool in_ghost_points = false;
             for (i = 0; i < 4; i++) {
-                if (c == shape_points[i][0]+grid_sel_x && r == shape_points[i][1]+ghost_y) {
-                    in_ghost_points = true;
-                    break;
+                if (konami) {
+                    if ((konami && c == shape_points[i][0]+ghost_y && r == shape_points[i][1]+grid_sel_y)) {
+                        in_ghost_points = true;
+                        break;
+                    }
+                } else {
+                    if (c == shape_points[i][0]+grid_sel_x && r == shape_points[i][1]+ghost_y) {
+                        in_ghost_points = true;
+                        break;
+                    }
                 }
             }
             if (pause_tick_count > 0) {
@@ -996,16 +1046,26 @@ void timer_handler() {
             } else {
                 grid_sel_y++;
             }
-            if(is_current_shape_illegal_placement()) {
-                grid_sel_y--;
+            if(current_shape_any_illegality()) {
+                if (konami) {
+                    grid_sel_x++;
+                } else {
+                    grid_sel_y--;
+                }
                 should_stamp = true;
                 draw_grid();
                 current_shape = next_shape;
                 next_shape = get_from_bag();
                 fall_tick_count = 0;
-                grid_sel_x = 4;
-                grid_sel_y = 1;
-                current_rot = 0;
+                if (konami) {
+                    grid_sel_x = 8;
+                    grid_sel_y = 9;
+                    current_rot = 1;
+                } else {
+                    grid_sel_x = 4;
+                    grid_sel_y = 1;
+                    current_rot = 0;
+                }
             }
         }
     } else if (pause_tick_count > 0) {
@@ -1044,52 +1104,91 @@ void timer_handler() {
 void keyboard_handler() {
     unsigned char scancode = inb(0x60);
     srand(rand_state+((int) (scancode-'0')));
-    if (pause_tick_count == 0) {
+    if (pause_tick_count == 0 && scancode != 224) {
         switch(scancode) {
             case 0x4B: // left arrow (move left)
-                grid_sel_x--;
-                if (is_current_shape_illegal_placement()) {
-                    grid_sel_x++;
+                if (konami) {
+                    grid_sel_y--;
+                    if (illegality(3) || illegality(0)) {
+                        grid_sel_y++;
+                    }
+                } else {
+                    grid_sel_x--;
+                    if (illegality(1) || illegality(0)) {
+                        grid_sel_x++;
+                    }
                 }
                 break;
             case 0x4D: // right arrow (move right)
-                grid_sel_x++;
-                if (is_current_shape_illegal_placement()) {
-                    grid_sel_x--;
+                if (konami) {
+                    grid_sel_y++;
+                    if (illegality(4) || illegality(0)) {
+                        grid_sel_y--;
+                    }
+                } else {
+                    grid_sel_x++;
+                    if (illegality(2) || illegality(0)) {
+                        grid_sel_x--;
+                    }
                 }
                 break;
             case 0x50: // down arrow (soft drop)
-                grid_sel_y++;
-                score++;
-                if (is_current_shape_illegal_placement()) {
-                    grid_sel_y--;
-                    score--;
+                if (konami) {
+                    grid_sel_x--;
+                    if (illegality(1) || illegality(0)) {
+                        grid_sel_x++;
+                    } else {
+                        fall_tick_count = 0;
+                        score++;
+                    }
                 } else {
-                    fall_tick_count = 0;
+                    grid_sel_y++;
+                    if (illegality(4) || illegality(0)) {
+                        grid_sel_y--;
+                    } else {
+                        fall_tick_count = 0;
+                        score++;
+                    }
                 }
                 break;
             case 0x39: // space (hard drop)
-                unsigned int temp = grid_sel_y;
-                while(!is_current_shape_illegal_placement()) {
-                    grid_sel_y++;
+                unsigned int temp;
+                if (konami) {
+                    temp = grid_sel_x;
+                    while(!(illegality(1) || illegality(0))) {
+                        grid_sel_x--;
+                    }
+                    grid_sel_x++;
+                    score += 2*(grid_sel_x - temp);
+                } else {
+                    temp = grid_sel_y;
+                    while(!(illegality(4) || illegality(0))) {
+                        grid_sel_y++;
+                    }
+                    grid_sel_y--;
+                    score += 2*(grid_sel_y - temp);
                 }
-                grid_sel_y--;
-                score += 2*(grid_sel_y - temp);
                 fall_tick_count = 0;
                 should_stamp = true;
                 draw_grid();
                 current_shape = next_shape;
                 next_shape = get_from_bag();
-                grid_sel_x = 4;
-                grid_sel_y = 1;
-                current_rot = 0;
+                if (konami) {
+                    grid_sel_x = 8;
+                    grid_sel_y = 9;
+                    current_rot = 1;
+                } else {
+                    grid_sel_x = 4;
+                    grid_sel_y = 1;
+                    current_rot = 0;
+                }
                 break;
             case 0x48: // up arrow (rotate right)
                 current_rot++;
                 if (current_rot >= 4) {
                     current_rot = 0;
                 }
-                if (is_current_shape_illegal_placement()) {
+                if (current_shape_any_illegality()) {
                     current_rot--;
                     if (current_rot < 0) {
                         current_rot = 3;
@@ -1101,7 +1200,7 @@ void keyboard_handler() {
                 if (current_rot < 0) {
                     current_rot = 3;
                 }
-                if (is_current_shape_illegal_placement()) {
+                if (current_shape_any_illegality()) {
                     current_rot++;
                     if (current_rot >= 4) {
                         current_rot = 0;
@@ -1122,9 +1221,15 @@ void keyboard_handler() {
                         held_shape = temp;
                         fall_tick_count = 0;
                     }
-                    grid_sel_x = 4;
-                    grid_sel_y = 1;
-                    current_rot = 0;
+                    if (konami) {
+                        grid_sel_x = 8;
+                        grid_sel_y = 10;
+                        current_rot = 1;
+                    } else {
+                        grid_sel_x = 4;
+                        grid_sel_y = 1;
+                        current_rot = 0;
+                    }
                 }
                 break;
             case 0x13: // r (reset)
@@ -1166,13 +1271,13 @@ void keyboard_handler() {
                 break;
         }
         // Konami handling
-        if (scancode == konami_inputs[konami_progress][1]) {
+        if ((int) scancode == konami_inputs[konami_progress][1]) {
             konami_progress++;
             if (konami_progress == 11) {
                 konami_progress = 0;
                 konami = !konami;
             }
-        } else if (scancode != konami_inputs[konami_progress][0]) {
+        } else if ((int) scancode != konami_inputs[konami_progress][0]) {
             konami_progress = 0;
         }
 
