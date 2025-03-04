@@ -407,41 +407,37 @@ void get_shape_points(int shape, bool rotate) {
         shape_points[i][1] = points[i][1] - center_y;
     }
 }
-bool legality[5];
-bool illegality_arr[5];
-void get_current_shape_illegality() {
+bool illegality(unsigned int rule) {
     get_shape_points(current_shape,true);
+    bool legality[5];
     for (int i = 0; i < 5; i++) {
-        illegality_arr[i] = true;
+        legality[i] = true;
     }
     for (int i = 0; i < 4; i++) {
         int x = shape_points[i][0]+grid_sel_x;
         int y = shape_points[i][1]+grid_sel_y;
         if (tilemap[y][x] != 0) {
-            illegality_arr[0] = false;
+            legality[0] = false;
         }
         if (x < 0) {
-            illegality_arr[1] = false;
+            legality[1] = false;
         }
         if (x >= grid_width) {
-            illegality_arr[2] = false;
+            legality[2] = false;
         }
         if (y < 0) {
-            illegality_arr[3] = false;
+            legality[3] = false;
         }
         if (y >= grid_height) {
-            illegality_arr[4] = false;
+            legality[4] = false;
         }
     }
     for (int i = 0; i < 5; i++) {
-        illegality_arr[i] = !illegality_arr[i];
+        legality[i] = !legality[i];
     }
+    return legality[rule];
 }
-bool illegality(unsigned int i) {
-    get_current_shape_illegality();
-    return illegality_arr[i];
-}
-bool current_shape_any_illegality() {
+bool any_illegality() {
     for (int i = 0; i < 5; i++) {
         if (illegality(i)) {
             return true;
@@ -1063,7 +1059,7 @@ void timer_handler() {
             } else {
                 grid_sel_y++;
             }
-            if(current_shape_any_illegality()) {
+            if(any_illegality()) {
                 if (konami) {
                     grid_sel_x++;
                 } else {
@@ -1083,7 +1079,7 @@ void timer_handler() {
                     grid_sel_y = 1;
                     current_rot = 0;
                 }
-                if(current_shape_any_illegality()) {
+                if(any_illegality()) {
                     reset();
                 }
             }
@@ -1226,7 +1222,7 @@ void keyboard_handler() {
                     grid_sel_y = 1;
                     current_rot = 0;
                 }
-                if(current_shape_any_illegality()) {
+                if(any_illegality()) {
                     reset();
                 }
                 break;
@@ -1235,10 +1231,31 @@ void keyboard_handler() {
                 if (current_rot >= 4) {
                     current_rot = 0;
                 }
-                if (current_shape_any_illegality()) {
-                    current_rot--;
-                    if (current_rot < 0) {
-                        current_rot = 3;
+                if (any_illegality()) {
+                    bool should_reset_state = false;
+                    unsigned int old_rot = current_rot-1;
+                    if (old_rot < 0) {
+                        old_rot = 3;
+                    }
+                    unsigned int reset_state[3] = {grid_sel_x,grid_sel_y,old_rot};
+                    if(illegality(1)) {
+                        unsigned int moved = 0;
+                        while (illegality(1) && moved < 2) {
+                            grid_sel_x++;
+                        }
+                    } else if (illegality(2)) {
+                        unsigned int moved = 0;
+                        while (illegality(2) && moved < 2) {
+                            grid_sel_x--;
+                        }
+                    }
+                    if(any_illegality()) {
+                        should_reset_state = true;
+                    }
+                    if (should_reset_state) {
+                        grid_sel_x = reset_state[0];
+                        grid_sel_y = reset_state[1];
+                        current_rot = reset_state[2];
                     }
                 }
                 break;
@@ -1247,10 +1264,31 @@ void keyboard_handler() {
                 if (current_rot < 0) {
                     current_rot = 3;
                 }
-                if (current_shape_any_illegality()) {
-                    current_rot++;
-                    if (current_rot >= 4) {
-                        current_rot = 0;
+                if (any_illegality()) {
+                    bool should_reset_state = false;
+                    unsigned int old_rot = current_rot+1;
+                    if (old_rot >= 4) {
+                        old_rot = 0;
+                    }
+                    unsigned int reset_state[3] = {grid_sel_x,grid_sel_y,old_rot};
+                    if(illegality(1)) {
+                        unsigned int moved = 0;
+                        while (illegality(1) && moved < 2) {
+                            grid_sel_x++;
+                        }
+                    } else if (illegality(2)) {
+                        unsigned int moved = 0;
+                        while (illegality(2) && moved < 2) {
+                            grid_sel_x--;
+                        }
+                    }
+                    if(any_illegality()) {
+                        should_reset_state = true;
+                    }
+                    if (should_reset_state) {
+                        grid_sel_x = reset_state[0];
+                        grid_sel_y = reset_state[1];
+                        current_rot = reset_state[2];
                     }
                 }
                 break;
@@ -1277,7 +1315,7 @@ void keyboard_handler() {
                         grid_sel_y = 1;
                         current_rot = 0;
                     }
-                    if(current_shape_any_illegality()) {
+                    if(any_illegality()) {
                         reset();
                     }
                 }
