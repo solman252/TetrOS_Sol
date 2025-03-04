@@ -1154,9 +1154,12 @@ void keyboard_handler() {
         switch(scancode) {
             case 0x4B: // left arrow (move left)
                 if (konami) {
-                    grid_sel_y--;
-                    if (illegality(3) || illegality(0)) {
-                        grid_sel_y++;
+                    grid_sel_x--;
+                    if (illegality(1) || illegality(0)) {
+                        grid_sel_x++;
+                    } else {
+                        fall_tick_count = 0;
+                        score++;
                     }
                 } else {
                     grid_sel_x--;
@@ -1167,9 +1170,36 @@ void keyboard_handler() {
                 break;
             case 0x4D: // right arrow (move right)
                 if (konami) {
-                    grid_sel_y++;
-                    if (illegality(4) || illegality(0)) {
-                        grid_sel_y--;
+                    current_rot++;
+                    if (current_rot >= 4) {
+                        current_rot = 0;
+                    }
+                    if (any_illegality()) {
+                        bool should_reset_state = false;
+                        unsigned int old_rot = current_rot-1;
+                        if (old_rot < 0) {
+                            old_rot = 3;
+                        }
+                        unsigned int reset_state[3] = {grid_sel_x,grid_sel_y,old_rot};
+                        if(illegality(1)) {
+                            unsigned int moved = 0;
+                            while (illegality(1) && moved < 2) {
+                                grid_sel_x++;
+                            }
+                        } else if (illegality(2)) {
+                            unsigned int moved = 0;
+                            while (illegality(2) && moved < 2) {
+                                grid_sel_x--;
+                            }
+                        }
+                        if(any_illegality()) {
+                            should_reset_state = true;
+                        }
+                        if (should_reset_state) {
+                            grid_sel_x = reset_state[0];
+                            grid_sel_y = reset_state[1];
+                            current_rot = reset_state[2];
+                        }
                     }
                 } else {
                     grid_sel_x++;
@@ -1180,12 +1210,9 @@ void keyboard_handler() {
                 break;
             case 0x50: // down arrow (soft drop)
                 if (konami) {
-                    grid_sel_x--;
-                    if (illegality(1) || illegality(0)) {
-                        grid_sel_x++;
-                    } else {
-                        fall_tick_count = 0;
-                        score++;
+                    grid_sel_y++;
+                    if (illegality(4) || illegality(0)) {
+                        grid_sel_y--;
                     }
                 } else {
                     grid_sel_y++;
@@ -1205,7 +1232,7 @@ void keyboard_handler() {
                         grid_sel_x--;
                     }
                     grid_sel_x++;
-                    score += 2*(grid_sel_x - temp);
+                    score += 2*(temp-grid_sel_x);
                 } else {
                     temp = grid_sel_y;
                     while(!(illegality(4) || illegality(0))) {
@@ -1229,39 +1256,48 @@ void keyboard_handler() {
                     current_rot = 0;
                 }
                 if(any_illegality()) {
-                    reset();
+                    print("COLLISON BUG DETECTED!", WHITE, 23);
+                    print("Retrace your steps to figure it out.", WHITE, 24);
+                    pause_tick_count = 18*10;
                 }
                 break;
             case 0x48: // up arrow (rotate right)
-                current_rot++;
-                if (current_rot >= 4) {
-                    current_rot = 0;
-                }
-                if (any_illegality()) {
-                    bool should_reset_state = false;
-                    unsigned int old_rot = current_rot-1;
-                    if (old_rot < 0) {
-                        old_rot = 3;
+                if (konami) {
+                    grid_sel_y--;
+                    if (illegality(3) || illegality(0)) {
+                        grid_sel_y++;
                     }
-                    unsigned int reset_state[3] = {grid_sel_x,grid_sel_y,old_rot};
-                    if(illegality(1)) {
-                        unsigned int moved = 0;
-                        while (illegality(1) && moved < 2) {
-                            grid_sel_x++;
+                } else {
+                    current_rot++;
+                    if (current_rot >= 4) {
+                        current_rot = 0;
+                    }
+                    if (any_illegality()) {
+                        bool should_reset_state = false;
+                        unsigned int old_rot = current_rot-1;
+                        if (old_rot < 0) {
+                            old_rot = 3;
                         }
-                    } else if (illegality(2)) {
-                        unsigned int moved = 0;
-                        while (illegality(2) && moved < 2) {
-                            grid_sel_x--;
+                        unsigned int reset_state[3] = {grid_sel_x,grid_sel_y,old_rot};
+                        if(illegality(1)) {
+                            unsigned int moved = 0;
+                            while (illegality(1) && moved < 2) {
+                                grid_sel_x++;
+                            }
+                        } else if (illegality(2)) {
+                            unsigned int moved = 0;
+                            while (illegality(2) && moved < 2) {
+                                grid_sel_x--;
+                            }
                         }
-                    }
-                    if(any_illegality()) {
-                        should_reset_state = true;
-                    }
-                    if (should_reset_state) {
-                        grid_sel_x = reset_state[0];
-                        grid_sel_y = reset_state[1];
-                        current_rot = reset_state[2];
+                        if(any_illegality()) {
+                            should_reset_state = true;
+                        }
+                        if (should_reset_state) {
+                            grid_sel_x = reset_state[0];
+                            grid_sel_y = reset_state[1];
+                            current_rot = reset_state[2];
+                        }
                     }
                 }
                 break;
