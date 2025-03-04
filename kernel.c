@@ -36,6 +36,7 @@ char grid_modes[][2][2] = {
 volatile unsigned int tick_count = 0;
 volatile unsigned int fall_tick_count = 0;
 volatile unsigned int pause_tick_count = 0;
+volatile unsigned int konami_ticks = 0;
 
 void outb(unsigned short port, unsigned char data) {
     asm volatile ("outb %0, %1" : : "a"(data), "Nd"(port));
@@ -1048,6 +1049,11 @@ void timer_handler() {
         buffer[i+1] = '\0';
         print(buffer, WHITE, 1);
     }
+    if(konami_ticks > 0) {
+        konami_ticks--;
+    } else {
+        konami_progress = 0;
+    }
     if (pause_tick_count == 0) {
         unsigned int fs = round(fall_speed);
         if (fs == 0) {
@@ -1361,6 +1367,7 @@ void keyboard_handler() {
         // Konami handling
         if ((int) scancode == konami_inputs[konami_progress][1]) {
             konami_progress++;
+            konami_ticks = 18;
             if (konami_progress == 11) {
                 konami_progress = 0;
                 konami = !konami;
