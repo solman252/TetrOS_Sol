@@ -1066,6 +1066,9 @@ void timer_handler() {
                     grid_sel_y = 1;
                     current_rot = 0;
                 }
+                if(current_shape_any_illegality()) {
+                    reset();
+                }
             }
         }
     } else if (pause_tick_count > 0) {
@@ -1182,6 +1185,9 @@ void keyboard_handler() {
                     grid_sel_y = 1;
                     current_rot = 0;
                 }
+                if(current_shape_any_illegality()) {
+                    reset();
+                }
                 break;
             case 0x48: // up arrow (rotate right)
                 current_rot++;
@@ -1229,6 +1235,9 @@ void keyboard_handler() {
                         grid_sel_x = 4;
                         grid_sel_y = 1;
                         current_rot = 0;
+                    }
+                    if(current_shape_any_illegality()) {
+                        reset();
                     }
                 }
                 break;
