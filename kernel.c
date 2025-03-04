@@ -325,6 +325,7 @@ unsigned int get_from_bag() {
 
 int tilemap[20][10];
 bool full_lines[20];
+bool full_konami_lines[10];
 
 void reset() {
     score = 0;
@@ -984,20 +985,36 @@ void draw_grid() {
         }
         if(!did_reset) {
             unsigned int cleared_count = 0;
-            for (int y = 0; y < grid_height; y++) {
-                bool line_full = true;
+            if (konami) {
                 for (int x = 0; x < grid_width; x++) {
-                    if (tilemap[y][x] == 0) {
-                        line_full = false;
-                        break;
+                    bool line_full = true;
+                    for (int y = 0; y < grid_height; y++) {
+                        if (tilemap[y][x] == 0) {
+                            line_full = false;
+                            break;
+                        }
+                    };
+                    if(line_full) {
+                        pause_tick_count = 6;
+                        cleared_count++;
                     }
-                };
-                if(line_full) {
-                    pause_tick_count = 6;
-                    full_lines[y] = true;
-                    cleared_count++;
+                    full_konami_lines[x] = line_full;
                 }
-                full_lines[y] = line_full;
+            } else {
+                for (int y = 0; y < grid_height; y++) {
+                    bool line_full = true;
+                    for (int x = 0; x < grid_width; x++) {
+                        if (tilemap[y][x] == 0) {
+                            line_full = false;
+                            break;
+                        }
+                    };
+                    if(line_full) {
+                        pause_tick_count = 6;
+                        cleared_count++;
+                    }
+                    full_lines[y] = line_full;
+                }
             }
             lines_cleared += cleared_count;
             unsigned int temp = lvl;
@@ -1078,22 +1095,46 @@ void timer_handler() {
         if (pause_tick_count < 0) {
             pause_tick_count = 0;
         }
-        for (int y = 0; y < grid_height; y++) {
-            bool line_full = full_lines[y];
-            if(line_full) {
-                if(pause_tick_count == 0) {
-                    for (int y2 = y; y2 > 0; y2--) {
-                        for (int x = 0; x < grid_width; x++) {
-                            tilemap[y2][x] = tilemap[y2-1][x];
+        if (konami) {
+            for (int x = 0; x < grid_width; x++) {
+                bool line_full = full_konami_lines[x];
+                if(line_full) {
+                    if(pause_tick_count == 0) {
+                        for (int x2 = x; x2 < (grid_width-1); x2++) {
+                            for (int y = 0; y < grid_height; y++) {
+                                tilemap[y][x2] = tilemap[y][x2+1];
+                            }
+                        }
+                        full_konami_lines[x] = false;
+                    } else {
+                        for (int y = 0; y < grid_height; y++) {
+                            if (pause_tick_count % 2 == 0) {
+                                tilemap[y][x] = 0;
+                            } else {
+                                tilemap[y][x] = -1;
+                            }
                         }
                     }
-                    full_lines[y] = false;
-                } else {
-                    for (int x = 0; x < grid_width; x++) {
-                        if (pause_tick_count % 2 == 0) {
-                            tilemap[y][x] = 0;
-                        } else {
-                            tilemap[y][x] = -1;
+                }
+            }
+        } else {
+            for (int y = 0; y < grid_height; y++) {
+                bool line_full = full_lines[y];
+                if(line_full) {
+                    if(pause_tick_count == 0) {
+                        for (int y2 = y; y2 > 0; y2--) {
+                            for (int x = 0; x < grid_width; x++) {
+                                tilemap[y2][x] = tilemap[y2-1][x];
+                            }
+                        }
+                        full_lines[y] = false;
+                    } else {
+                        for (int x = 0; x < grid_width; x++) {
+                            if (pause_tick_count % 2 == 0) {
+                                tilemap[y][x] = 0;
+                            } else {
+                                tilemap[y][x] = -1;
+                            }
                         }
                     }
                 }
