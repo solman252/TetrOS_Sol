@@ -2,9 +2,11 @@
 
 const int grid_width = 10;
 const int grid_height = 20;
+const unsigned int slide_time = 24;
 
 int grid_sel_x,grid_sel_y,current_shape,next_shape,held_shape,score,lines_cleared,lvl,current_rot;
 float fall_speed;
+bool should_slide = false;
 bool held_this_turn;
 bool should_stamp = false;
 bool highlight_bg = true;
@@ -344,6 +346,7 @@ void reset() {
 
     tick_count = 0;
     fall_tick_count = 0;
+    should_slide = false;
 
     konami = false;
     konami_progress = 0;
@@ -1056,6 +1059,9 @@ void timer_handler() {
     }
     if (pause_tick_count == 0) {
         unsigned int fs = round(fall_speed);
+        if (should_slide) {
+            fs = slide_time;
+        }
         if (fs == 0) {
             fs = 1;
         }
@@ -1071,22 +1077,27 @@ void timer_handler() {
                 } else {
                     grid_sel_y--;
                 }
-                should_stamp = true;
-                draw_grid();
-                current_shape = next_shape;
-                next_shape = get_from_bag();
                 fall_tick_count = 0;
-                if (konami) {
-                    grid_sel_x = 8;
-                    grid_sel_y = 9;
-                    current_rot = 1;
+                if (should_slide) {
+                    should_slide = false;
+                    should_stamp = true;
+                    draw_grid();
+                    current_shape = next_shape;
+                    next_shape = get_from_bag();
+                    if (konami) {
+                        grid_sel_x = 8;
+                        grid_sel_y = 9;
+                        current_rot = 1;
+                    } else {
+                        grid_sel_x = 4;
+                        grid_sel_y = 1;
+                        current_rot = 0;
+                    }
+                    if(any_illegality()) {
+                        reset();
+                    }
                 } else {
-                    grid_sel_x = 4;
-                    grid_sel_y = 1;
-                    current_rot = 0;
-                }
-                if(any_illegality()) {
-                    reset();
+                    should_slide = true;
                 }
             }
         }
