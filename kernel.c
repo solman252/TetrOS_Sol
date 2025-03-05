@@ -1364,6 +1364,39 @@ void keyboard_handler() {
                     }
                 }
                 break;
+            case 0x2D: // x (rotate right)
+                current_rot++;
+                if (current_rot >= 4) {
+                    current_rot = 0;
+                }
+                if (any_illegality()) {
+                    bool should_reset_state = false;
+                    unsigned int old_rot = current_rot-1;
+                    if (old_rot < 0) {
+                        old_rot = 3;
+                    }
+                    unsigned int reset_state[3] = {grid_sel_x,grid_sel_y,old_rot};
+                    if(illegality(1)) {
+                        unsigned int moved = 0;
+                        while (illegality(1) && moved < 2) {
+                            grid_sel_x++;
+                        }
+                    } else if (illegality(2)) {
+                        unsigned int moved = 0;
+                        while (illegality(2) && moved < 2) {
+                            grid_sel_x--;
+                        }
+                    }
+                    if(any_illegality()) {
+                        should_reset_state = true;
+                    }
+                    if (should_reset_state) {
+                        grid_sel_x = reset_state[0];
+                        grid_sel_y = reset_state[1];
+                        current_rot = reset_state[2];
+                    }
+                }
+                break;
             case 0x2E: // c (hold)
                 if (!held_this_turn) {
                     held_this_turn = true;
