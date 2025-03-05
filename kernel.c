@@ -1032,6 +1032,10 @@ void draw_grid() {
             score += round((cleared_count % 4) / 3)*(300*(lvl+1)); // triples
             score += round(((cleared_count % 4) % 3) / 2)*(100*(lvl+1)); // doubles
             score += (((cleared_count % 4) % 3) % 2)*(40*(lvl+1)); // singles
+        } else {
+            print("COLLISON BUG DETECTED!", WHITE, 23);
+            print("Retrace your steps to figure it out.", WHITE, 24);
+            pause_tick_count = 18*10;
         }
     }
 }
@@ -1267,9 +1271,7 @@ void keyboard_handler() {
                     current_rot = 0;
                 }
                 if(any_illegality()) {
-                    print("COLLISON BUG DETECTED!", WHITE, 23);
-                    print("Retrace your steps to figure it out.", WHITE, 24);
-                    pause_tick_count = 18*10;
+                    reset();
                 }
                 break;
             case 0x48: // up arrow (rotate right)
