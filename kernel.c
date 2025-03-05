@@ -1062,6 +1062,23 @@ void timer_handler() {
         konami_progress = 0;
     }
     if (pause_tick_count == 0) {
+        // turn off should_slide if innapropriate
+        if (should_slide) {
+            if (konami) {
+                grid_sel_x--;
+            } else {
+                grid_sel_y++;
+            }
+            if(!any_illegality()) {
+                should_slide = false;
+            }
+            if (konami) {
+                grid_sel_x++;
+            } else {
+                grid_sel_y--;
+            }
+        }
+
         unsigned int fs = round(fall_speed);
         if (should_slide) {
             fs = slide_time;
