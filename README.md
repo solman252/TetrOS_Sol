@@ -1,6 +1,6 @@
 # tetrOS
 
-tetrOS is a simple, bootable OS designed to run a game of Tetris.
+tetrOS is a simple, ~~bootable~~ OS designed to run a game of Tetris.
 
 ---
 
