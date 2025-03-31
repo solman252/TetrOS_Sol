@@ -2,7 +2,7 @@
 
 **compile:**
 ```
-cd OS/NEW\ KERNEL/IDT
+cd tetrOS
 make
 ```
 
@@ -16,6 +16,5 @@ qemu-system-i386 out/IDT.iso
 ```
 **clean:**
 ```
-cd OS/NEW\ KERNEL/IDT
 make clean
 ```
