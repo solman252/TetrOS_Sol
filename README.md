@@ -1,4 +1,4 @@
-## how 2 use :-<br/>
+## how 2 use <br/>
 
 **compile:**
 ```
