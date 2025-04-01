@@ -19,6 +19,10 @@ void strcat(char *dest, const char *src);
 
 int isspace(char c);
 
+int isalpha(char c);
+char upper(char c);
+char lower(char c);
+
 void itoa(char *buf, int base, int d);
 
 #endif

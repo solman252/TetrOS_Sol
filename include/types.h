@@ -13,5 +13,9 @@ typedef uint8 byte;
 typedef uint16 word;
 typedef uint32 dword;
 
-#endif
+typedef enum {
+    FALSE,
+    TRUE
+} BOOL;
 
+#endif

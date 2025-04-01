@@ -4,7 +4,7 @@
 
 void *memset(void *dst, char c, uint32 n) {
     char *temp = dst;
-    for (; n != 0; n--) *temp++ = c;
+    for (; n != 0; n--) *temp++ = c; //im not commenting all this shit
     return dst;
 }
 
@@ -62,13 +62,28 @@ int isspace(char c) {
     return c == ' ' || c == '\t' || c == '\n' || c == '\v' || c == '\f' || c == '\r';
 }
 
+int isalpha(char c) {
+    return (((c >= 'A') && (c <= 'Z')) || ((c >= 'a') && (c <= 'z')));
+}
+
+char upper(char c) {
+    if ((c >= 'a') && (c <= 'z'))
+        return (c - 32);
+    return c;
+}
+
+char lower(char c) {
+    if ((c >= 'A') && (c <= 'Z'))
+        return (c + 32);
+    return c;
+}
+
 void itoa(char *buf, int base, int d) {
     char *p = buf;
     char *p1, *p2;
     unsigned long ud = d;
     int divisor = 10;
 
-    //if %d is specified and D is minus, put ‘-’ in the head
     if (base == 'd' && d < 0) {
         *p++ = '-';
         buf++;
@@ -76,16 +91,13 @@ void itoa(char *buf, int base, int d) {
     } else if (base == 'x')
         divisor = 16;
 
-    //divide UD by DIVISOR until UD == 0
     do {
         int remainder = ud % divisor;
         *p++ = (remainder < 10) ? remainder + '0' : remainder + 'a' - 10;
     } while (ud /= divisor);
 
-    //terminate BUF
     *p = 0;
 
-    //Reverse BUF
     p1 = buf;
     p2 = p - 1;
     while (p1 < p2) {

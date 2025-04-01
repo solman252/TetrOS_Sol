@@ -3,121 +3,255 @@
 #include "string.h"
 #include "gdt.h"
 #include "idt.h"
-#include "io_ports.h"  // For inportb()
+#include "keyboard.h"
 #include "vga.h"
 
-#define GRID_ROWS       20
 #define GRID_COLS       10
-#define CELL_WIDTH      2   // Each cell is 2 characters wide
-#define GRID_ORIGIN_X   10
-#define GRID_ORIGIN_Y   5
+#define GRID_ROWS       20
+#define CELL_WIDTH      2
+#define GRID_X_OFFSET   10
+#define GRID_Y_OFFSET   2
+#define EMPTY_CELL      255
 
-// Global variables tracking the currently selected cell.
-int selected_row = 0;
-int selected_col = 0;
+extern uint16 vga_item_entry(uint8 ch, VGA_COLOR_TYPE fore_color, VGA_COLOR_TYPE back_color);
 
-/**
- * Draw a single cell at (row, col). If is_selected is non-zero,
- * draw the cell as a cursor ("[]"). Otherwise, draw it as empty ("..").
- */
-void draw_cell(int row, int col, int is_selected) {
-    console_gotoxy(GRID_ORIGIN_X + col * CELL_WIDTH, GRID_ORIGIN_Y + row);
-    if (is_selected)
-        console_putstr("[]");
-    else
-        console_putstr("..");
+uint8 grid[GRID_ROWS][GRID_COLS];
+
+typedef struct {
+    int shape_id;
+    int rotation;
+    int x;
+    int y;
+    VGA_COLOR_TYPE color;
+} CurrentShape;
+
+CurrentShape current;
+
+int shape_o[4][4][4] = {
+    { {1,1,0,0}, {2,1,0,0}, {0,0,0,0}, {0,0,0,0} },
+    { {1,1,0,0}, {2,1,0,0}, {0,0,0,0}, {0,0,0,0} },
+    { {1,1,0,0}, {2,1,0,0}, {0,0,0,0}, {0,0,0,0} },
+    { {1,1,0,0}, {2,1,0,0}, {0,0,0,0}, {0,0,0,0} }
+};
+
+int shape_i[4][4][4] = {
+    { {1,0,0,0}, {2,0,0,0}, {1,0,0,0}, {1,0,0,0} },
+    { {1,1,2,1}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0} },
+    { {1,0,0,0}, {1,0,0,0}, {2,0,0,0}, {1,0,0,0} },
+    { {1,2,1,1}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0} }
+};
+
+int shape_s[4][4][4] = {
+    { {0,1,1,0}, {1,2,0,0}, {0,0,0,0}, {0,0,0,0} },
+    { {1,0,0,0}, {2,1,0,0}, {0,1,0,0}, {0,0,0,0} },
+    { {0,2,1,0}, {1,1,0,0}, {0,0,0,0}, {0,0,0,0} },
+    { {1,0,0,0}, {1,2,0,0}, {0,1,0,0}, {0,0,0,0} }
+};
+
+int shape_z[4][4][4] = {
+    { {1,1,0,0}, {0,2,1,0}, {0,0,0,0}, {0,0,0,0} },
+    { {0,1,0,0}, {2,1,0,0}, {1,0,0,0}, {0,0,0,0} },
+    { {1,2,0,0}, {0,1,1,0}, {0,0,0,0}, {0,0,0,0} },
+    { {0,1,0,0}, {1,2,0,0}, {1,0,0,0}, {0,0,0,0} }
+};
+
+int shape_l[4][4][4] = {
+    { {1,0,0,0}, {2,0,0,0}, {1,1,0,0}, {0,0,0,0} },
+    { {1,2,1,0}, {1,0,0,0}, {0,0,0,0}, {0,0,0,0} },
+    { {1,1,0,0}, {0,2,0,0}, {0,1,0,0}, {0,0,0,0} },
+    { {0,0,1,0}, {1,2,1,0}, {0,0,0,0}, {0,0,0,0} }
+};
+
+int shape_j[4][4][4] = {
+    { {0,1,0,0}, {0,2,0,0}, {1,1,0,0}, {0,0,0,0} },
+    { {1,0,0,0}, {1,2,1,0}, {0,0,0,0}, {0,0,0,0} },
+    { {1,1,0,0}, {2,0,0,0}, {1,0,0,0}, {0,0,0,0} },
+    { {1,2,1,0}, {0,0,1,0}, {0,0,0,0}, {0,0,0,0} }
+};
+
+int shape_t[4][4][4] = {
+    { {1,2,1,0}, {0,1,0,0}, {0,0,0,0}, {0,0,0,0} },
+    { {0,1,0,0}, {1,2,0,0}, {0,1,0,0}, {0,0,0,0} },
+    { {0,1,0,0}, {1,2,1,0}, {0,0,0,0}, {0,0,0,0} },
+    { {1,0,0,0}, {2,1,0,0}, {1,0,0,0}, {0,0,0,0} }
+};
+
+int is_valid_position(int newX, int newY, int newRotation) {
+    int r, c;
+    for (r = 0; r < 4; r++) {
+        for (c = 0; c < 4; c++) {
+            int val = 0;
+            switch (current.shape_id) {
+                case 0: val = shape_o[newRotation][r][c]; break;
+                case 1: val = shape_i[newRotation][r][c]; break;
+                case 2: val = shape_s[newRotation][r][c]; break;
+                case 3: val = shape_z[newRotation][r][c]; break;
+                case 4: val = shape_l[newRotation][r][c]; break;
+                case 5: val = shape_j[newRotation][r][c]; break;
+                case 6: val = shape_t[newRotation][r][c]; break;
+                default: break;
+            }
+            if (val) {
+                int gridX = newX + c;
+                int gridY = newY + r;
+                if (gridX < 0 || gridX >= GRID_COLS || gridY < 0 || gridY >= GRID_ROWS)
+                    return 0;
+                if (grid[gridY][gridX] != EMPTY_CELL)
+                    return 0;
+            }
+        }
+    }
+    return 1;
 }
 
-/**
- * Draw the entire grid.
- */
+void draw_cell(int row, int col, int filled, VGA_COLOR_TYPE color) {
+    int screen_x = GRID_X_OFFSET + col * CELL_WIDTH;
+    int screen_y = GRID_Y_OFFSET + row;
+    int index = screen_y * VGA_WIDTH + screen_x;
+    uint16 *vga = (uint16*)VGA_ADDRESS;
+    if (filled) {
+        vga[index]   = vga_item_entry('[', color, COLOR_BLACK);
+        vga[index+1] = vga_item_entry(']', color, COLOR_BLACK);
+    } else {
+        vga[index]   = vga_item_entry('.', COLOR_WHITE, COLOR_BLACK);
+        vga[index+1] = vga_item_entry('.', COLOR_WHITE, COLOR_BLACK);
+    }
+}
+
 void draw_grid() {
-    for (int row = 0; row < GRID_ROWS; row++) {
-        for (int col = 0; col < GRID_COLS; col++) {
-            draw_cell(row, col, (row == selected_row && col == selected_col));
+    int r, c;
+    for (r = 0; r < GRID_ROWS; r++) {
+        for (c = 0; c < GRID_COLS; c++) {
+            if (grid[r][c] == EMPTY_CELL)
+                draw_cell(r, c, 0, COLOR_WHITE);
+            else
+                draw_cell(r, c, 1, grid[r][c]);
         }
     }
 }
 
-/**
- * Waits until there is a key available by polling the keyboard status port (0x64)
- * and then reads the scancode from port 0x60.
- */
-uint8 get_scancode() {
-    // Wait for the keyboard's output buffer to be full (bit 0 of port 0x64).
-    while (!(inportb(0x64) & 1)) {
-        // Busy-wait
+void draw_current_shape() {
+    int r, c;
+    for (r = 0; r < 4; r++) {
+        for (c = 0; c < 4; c++) {
+            int val = 0;
+            switch (current.shape_id) {
+                case 0: val = shape_o[current.rotation][r][c]; break;
+                case 1: val = shape_i[current.rotation][r][c]; break;
+                case 2: val = shape_s[current.rotation][r][c]; break;
+                case 3: val = shape_z[current.rotation][r][c]; break;
+                case 4: val = shape_l[current.rotation][r][c]; break;
+                case 5: val = shape_j[current.rotation][r][c]; break;
+                case 6: val = shape_t[current.rotation][r][c]; break;
+                default: break;
+            }
+            if (val) {
+                int gridX = current.x + c;
+                int gridY = current.y + r;
+                if (gridX >= 0 && gridX < GRID_COLS && gridY >= 0 && gridY < GRID_ROWS) {
+                    draw_cell(gridY, gridX, 1, current.color);
+                }
+            }
+        }
     }
-    return inportb(0x60);
 }
 
-/**
- * Update the grid when the selection changes.
- * This function redraws the old cell and the new cell.
- */
-void update_selection(int new_row, int new_col) {
-    // Redraw the old cell as empty.
-    draw_cell(selected_row, selected_col, 0);
-    
-    // Update selection globals.
-    selected_row = new_row;
-    selected_col = new_col;
-    
-    // Draw the new cell as selected.
-    draw_cell(selected_row, selected_col, 1);
+void place_shape() {
+    int r, c;
+    for (r = 0; r < 4; r++) {
+        for (c = 0; c < 4; c++) {
+            int val = 0;
+            switch (current.shape_id) {
+                case 0: val = shape_o[current.rotation][r][c]; break;
+                case 1: val = shape_i[current.rotation][r][c]; break;
+                case 2: val = shape_s[current.rotation][r][c]; break;
+                case 3: val = shape_z[current.rotation][r][c]; break;
+                case 4: val = shape_l[current.rotation][r][c]; break;
+                case 5: val = shape_j[current.rotation][r][c]; break;
+                case 6: val = shape_t[current.rotation][r][c]; break;
+                default: break;
+            }
+            if (val) {
+                int gridX = current.x + c;
+                int gridY = current.y + r;
+                if (gridX >= 0 && gridX < GRID_COLS && gridY >= 0 && gridY < GRID_ROWS) {
+                    grid[gridY][gridX] = current.color;
+                }
+            }
+        }
+    }
 }
 
-/**
- * Entry point for the kernel.
- */
+VGA_COLOR_TYPE next_color(VGA_COLOR_TYPE cur) {
+    switch(cur) {
+        case COLOR_RED: return COLOR_GREEN;
+        case COLOR_GREEN: return COLOR_BLUE;
+        case COLOR_BLUE: return COLOR_YELLOW;
+        case COLOR_YELLOW: return COLOR_MAGENTA;
+        case COLOR_MAGENTA: return COLOR_CYAN;
+        case COLOR_CYAN: return COLOR_WHITE;
+        default: return COLOR_RED;
+    }
+}
+
+void spawn_new_shape() {
+    current.shape_id = 0;
+    current.rotation = 0;
+    current.x = (GRID_COLS - 4) / 2;
+    current.y = 0;
+    current.color = COLOR_RED;
+}
+
 void kmain() {
-    // Initialize GDT, IDT, and console.
+    int key;
+    int newRotation;
     gdt_init();
     idt_init();
     console_init(COLOR_WHITE, COLOR_BLACK);
-
-    // Draw our initial grid.
-    draw_grid();
-
-    // Main loop: poll for keyboard input and update the grid selection.
-    while (1) {
-        uint8 scancode = get_scancode();
-
-        /* 
-         * The following scancodes are for the arrow keys (make codes):
-         * Up    : 0x48
-         * Down  : 0x50
-         * Left  : 0x4B
-         * Right : 0x4D
-         *
-         * (Release codes typically have bit 7 set. We ignore those for this example.)
-         */
-        switch (scancode) {
-            case 0x48: // Up arrow
-                if (selected_row > 0)
-                    update_selection(selected_row - 1, selected_col);
-                break;
-            case 0x50: // Down arrow
-                if (selected_row < GRID_ROWS - 1)
-                    update_selection(selected_row + 1, selected_col);
-                break;
-            case 0x4B: // Left arrow
-                if (selected_col > 0)
-                    update_selection(selected_row, selected_col - 1);
-                break;
-            case 0x4D: // Right arrow
-                if (selected_col < GRID_COLS - 1)
-                    update_selection(selected_row, selected_col + 1);
-                break;
-            default:
-                // Ignore other keys.
-                break;
+    keyboard_init();
+    int r, c;
+    for (r = 0; r < GRID_ROWS; r++) {
+        for (c = 0; c < GRID_COLS; c++) {
+            grid[r][c] = EMPTY_CELL;
         }
     }
-
-    // The following code is unreachable but left from your original example.
-    asm volatile("\txorl %edx, %edx");
-    asm volatile("\tmovl $0x7b, %eax");
-    asm volatile("\tmovl $0, %ecx");
-    asm volatile("\tidivl %ecx");
+    spawn_new_shape();
+    draw_grid();
+    draw_current_shape();
+    while (1) {
+        key = kb_get_scancode();
+        if (key == 0x4B) {
+            if (is_valid_position(current.x - 1, current.y, current.rotation))
+                current.x--;
+        } else if (key == 0x4D) {
+            if (is_valid_position(current.x + 1, current.y, current.rotation))
+                current.x++;
+        } else if (key == 0x48) {
+            if (is_valid_position(current.x, current.y - 1, current.rotation))
+                current.y--;
+        } else if (key == 0x50) {
+            if (is_valid_position(current.x, current.y + 1, current.rotation))
+                current.y++;
+        } else if (key == 0x13) {
+            newRotation = (current.rotation + 1) % 4;
+            if (is_valid_position(current.x, current.y, newRotation))
+                current.rotation = newRotation;
+        } else if (key == 0x2E) {
+            current.color = next_color(current.color);
+        } else if (key == 0x1F) {
+            current.shape_id = (current.shape_id + 1) % 7;
+            current.rotation = 0;
+            current.x = (GRID_COLS - 4) / 2;
+            current.y = 0;
+        } else if (key == 0x39) {
+            place_shape();
+            current.shape_id = (current.shape_id + 1) % 7;
+            current.rotation = 0;
+            current.x = (GRID_COLS - 4) / 2;
+            current.y = 0;
+            current.color = COLOR_RED;
+        }
+        draw_grid();
+        draw_current_shape();
+    }
 }

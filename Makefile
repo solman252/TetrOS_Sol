@@ -40,8 +40,7 @@ OBJECTS=$(ASM_OBJ)/entry.o $(ASM_OBJ)/load_gdt.o\
 		$(OBJ)/io_ports.o $(OBJ)/vga.o\
 		$(OBJ)/string.o $(OBJ)/console.o\
 		$(OBJ)/gdt.o $(OBJ)/idt.o $(OBJ)/isr.o $(OBJ)/8259_pic.o\
-		$(OBJ)/kernel.o
-
+		$(OBJ)/kernel.o $(OBJ)/keyboard.o   # <-- Add keyboard.o to the list of objects
 
 all: $(OBJECTS)
 	@printf "[ linking... ]\n"
@@ -123,6 +122,11 @@ $(OBJ)/8259_pic.o : $(SRC)/8259_pic.c
 $(OBJ)/kernel.o : $(SRC)/kernel.c
 	@printf "[ $(SRC)/kernel.c ]\n"
 	$(CC) $(CC_FLAGS) -c $(SRC)/kernel.c -o $(OBJ)/kernel.o
+	@printf "\n"
+
+$(OBJ)/keyboard.o : $(SRC)/keyboard.c  # <-- Add this line to compile keyboard.c
+	@printf "[ $(SRC)/keyboard.c ]\n"
+	$(CC) $(CC_FLAGS) -c $(SRC)/keyboard.c -o $(OBJ)/keyboard.o
 	@printf "\n"
 
 clean:
