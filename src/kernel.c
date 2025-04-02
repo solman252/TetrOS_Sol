@@ -113,7 +113,7 @@ void draw_cell(int row, int col, int filled, VGA_COLOR_TYPE color) {
         vga[index]   = vga_item_entry('[', color, COLOR_BLACK);
         vga[index+1] = vga_item_entry(']', color, COLOR_BLACK);
     } else {
-        vga[index]   = vga_item_entry('.', COLOR_WHITE, COLOR_BLACK);
+        vga[index]   = vga_item_entry(' ', COLOR_WHITE, COLOR_BLACK);
         vga[index+1] = vga_item_entry('.', COLOR_WHITE, COLOR_BLACK);
     }
 }
