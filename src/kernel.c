@@ -12,7 +12,7 @@ void kmain() {
     console_init(COLOR_WHITE, COLOR_BLACK);
     keyboard_init();
 
-    printf();
+    printf("aaa");
 
 }
 
