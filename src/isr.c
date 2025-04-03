@@ -3,10 +3,8 @@
 #include "8259_pic.h"
 #include "console.h"
 
-// For both exceptions and irq interrupt
 ISR g_interrupt_handlers[NO_INTERRUPT_HANDLERS];
 
-// for more details, see Intel manual -> Interrupt & Exception Handling
 char *exception_messages[32] = {
     "Division By Zero",
     "Debug",
@@ -42,26 +40,16 @@ char *exception_messages[32] = {
     "Reserved"
 };
 
-/**
- * register given handler to interrupt handlers at given num
- */
 void isr_register_interrupt_handler(int num, ISR handler) {
     printf("IRQ %d registered\n", num);
     if (num < NO_INTERRUPT_HANDLERS)
         g_interrupt_handlers[num] = handler;
 }
 
-/*
- * turn off current interrupt
-*/
 void isr_end_interrupt(int num) {
     pic8259_eoi(num);
 }
 
-/**
- * invoke isr routine and send eoi to pic,
- * being called in irq.asm
- */
 void isr_irq_handler(REGISTERS *reg) {
     if (g_interrupt_handlers[reg->int_no] != NULL) {
         ISR handler = g_interrupt_handlers[reg->int_no];
@@ -78,10 +66,6 @@ static void print_registers(REGISTERS *reg) {
     printf("eip=0x%x, cs=0x%x, ss=0x%x, eflags=0x%x, useresp=0x%x\n", reg->eip, reg->ss, reg->eflags, reg->useresp);
 }
 
-/**
- * invoke exception routine,
- * being called in exception.asm
- */
 void isr_exception_handler(REGISTERS reg) {
     if (reg.int_no < 32) {
         printf("EXCEPTION: %s\n", exception_messages[reg.int_no]);
