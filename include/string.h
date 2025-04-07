@@ -3,13 +3,13 @@
 
 #include "types.h"
 
-void *memset(void *dst, char c, uint32 n);
+void *memset(void *dst, char c, uint n);
 
-void *memcpy(void *dst, const void *src, uint32 n);
+void *memcpy(void *dst, const void *src, uint n);
 
-int memcmp(uint8 *s1, uint8 *s2, uint32 n);
+int memcmp(uchar *s1, uchar *s2, uint n);
 
-int strlen(const char *s);
+int str_length(const char *s);
 
 int strcmp(const char *s1, char *s2);
 
@@ -24,5 +24,7 @@ char upper(char c);
 char lower(char c);
 
 void itoa(char *buf, int base, int d);
+
+uint count_digits(int n);
 
 #endif

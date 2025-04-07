@@ -2,13 +2,13 @@
 
 #include "types.h"
 
-void *memset(void *dst, char c, uint32 n) {
+void *memset(void *dst, char c, uint n) {
     char *temp = dst;
     for (; n != 0; n--) *temp++ = c; //im not commenting all this shit
     return dst;
 }
 
-void *memcpy(void *dst, const void *src, uint32 n) {
+void *memcpy(void *dst, const void *src, uint n) {
     char *ret = dst;
     char *p = dst;
     const char *q = src;
@@ -17,7 +17,7 @@ void *memcpy(void *dst, const void *src, uint32 n) {
     return ret;
 }
 
-int memcmp(uint8 *s1, uint8 *s2, uint32 n) {
+int memcmp(uchar *s1, uchar *s2, uint n) {
     while (n--) {
         if (*s1 != *s2)
             return 0;
@@ -27,7 +27,7 @@ int memcmp(uint8 *s1, uint8 *s2, uint32 n) {
     return 1;
 }
 
-int strlen(const char *s) {
+int str_length(const char *s) {
     int len = 0;
     while (*s++)
         len++;
@@ -52,9 +52,9 @@ int strcpy(char *dst, const char *src) {
 }
 
 void strcat(char *dest, const char *src) {
-    char *end = (char *)dest + strlen(dest);
-    memcpy((void *)end, (void *)src, strlen(src));
-    end = end + strlen(src);
+    char *end = (char *)dest + str_length(dest);
+    memcpy((void *)end, (void *)src, str_length(src));
+    end = end + str_length(src);
     *end = '\0';
 }
 
@@ -107,4 +107,15 @@ void itoa(char *buf, int base, int d) {
         p1++;
         p2--;
     }
+}
+
+// Returns the amount of digits in {n}.
+// n: int
+uint count_digits(int n) {
+    uint count = (n <= 0) ? 1 : 0;
+    while (n != 0) {
+        n /= 10;
+        count++;
+    }
+    return count;
 }

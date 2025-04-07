@@ -1,18 +1,23 @@
-#include "kernel.h"
-#include "console.h"
+#include "complex/kernel.h"
+#include "screen.h"
 #include "string.h"
-#include "gdt.h"
-#include "idt.h"
+#include "complex/gdt.h"
+#include "complex/idt.h"
 #include "keyboard.h"
+
+vga_pallete pallete;
 
 void kmain() {
     gdt_init();
     idt_init();
 
-    console_init(COLOR_WHITE, COLOR_BLACK);
-    keyboard_init();
+    screen_init();
+    // keyboard_init();
 
-    printf("aaa");
+    vga_disable_cursor();
+    clear_screen();
+    pallete = new_pallete();
+    register_palette(pallete);
 
 }
 
